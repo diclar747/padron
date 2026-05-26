@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Padrón Electoral - Login</title>
+  <title>Padrón Electoral ANR</title>
   <link rel="manifest" href="/manifest.json">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -25,100 +25,275 @@
     body {
       background: radial-gradient(circle at 50% 50%, #7f1d1d 0%, #0f172a 100%);
     }
+    .custom-backdrop {
+      backdrop-filter: blur(20px);
+    }
   </style>
 </head>
-<body class="text-slate-100 flex items-center justify-center min-h-screen p-4 relative overflow-hidden">
+<body class="text-slate-100 flex flex-col min-h-screen relative overflow-x-hidden">
   <!-- Glowing background elements -->
   <div class="absolute top-[-10%] left-[-10%] w-96 h-96 bg-red-700 rounded-full filter blur-[140px] opacity-25 animate-pulse duration-[6000ms]"></div>
   <div class="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-rose-700 rounded-full filter blur-[140px] opacity-25 animate-pulse duration-[8000ms]"></div>
 
-  <div class="w-full max-w-md relative z-10">
-    <div class="bg-slate-900/70 backdrop-blur-2xl border border-slate-800/80 rounded-2xl p-8 shadow-2xl shadow-slate-950/50">
-      <div class="text-center mb-8">
-        <div class="mb-4">
-          <img src="/logo.png" class="w-24 h-24 mx-auto object-contain drop-shadow-[0_0_15px_rgba(239,68,68,0.3)] animate-pulse duration-[5000ms]">
-        </div>
-        <h1 class="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-red-400 via-rose-300 to-red-650 bg-clip-text text-transparent">
-          PADRÓN ELECTORAL ANR
+  <!-- Navigation Header Bar -->
+  <header class="fixed top-0 left-0 right-0 z-50 bg-slate-900/60 custom-backdrop border-b border-slate-800/80 px-4 md:px-8 py-3 flex items-center justify-between shadow-lg shadow-slate-950/20">
+    <div class="flex items-center gap-3">
+      <img src="/logo.png" class="w-10 h-10 object-contain drop-shadow-[0_0_8px_rgba(239,68,68,0.4)]">
+      <div class="leading-none">
+        <h1 class="text-sm md:text-base font-extrabold tracking-wide bg-gradient-to-r from-red-400 to-rose-355 bg-clip-text text-transparent uppercase select-none">
+          Padrón Electoral ANR
         </h1>
-        <p class="text-slate-400 text-sm mt-2 font-light">
-          Sistema de veedores y control electoral
+        <span class="text-[9px] font-bold text-red-500 tracking-widest uppercase">Asociación Nacional Republicana</span>
+      </div>
+    </div>
+    <button id="btnToggleView" data-view="login" class="flex items-center gap-2 px-3.5 py-2 bg-slate-850 hover:bg-slate-800 border border-slate-700/60 text-xs font-bold text-slate-200 rounded-xl transition-all active:scale-95 shadow-md shadow-slate-950/30 cursor-pointer">
+      <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+      </svg>
+      <span>Iniciar Sesión</span>
+    </button>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-1 flex items-center justify-center p-4 pt-24 pb-12 z-10 w-full max-w-4xl mx-auto">
+    <!-- View 1: Public Elector Search (Default) -->
+    <div id="viewSearch" class="w-full space-y-6 transition-all duration-300">
+      <div class="text-center max-w-xl mx-auto space-y-2 mb-2">
+        <h2 class="text-3xl md:text-4xl font-black tracking-tight text-white">Consulta tu Lugar de Votación</h2>
+        <p class="text-slate-400 text-xs md:text-sm font-light leading-relaxed">
+          Ingresa tu número de Cédula de Identidad o tu nombre completo para consultar tu local, mesa y orden de votación para las próximas elecciones de la ANR.
         </p>
       </div>
 
-      <form id="loginForm" class="space-y-5">
-        <div>
-          <label class="block text-slate-400 font-semibold text-xs uppercase tracking-wider mb-2">Correo electrónico</label>
-          <div class="relative">
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
+      <div class="bg-slate-900/60 custom-backdrop border border-slate-800/80 rounded-3xl p-5 md:p-8 shadow-2xl shadow-slate-950/50 space-y-6">
+        <!-- Search bar input -->
+        <div class="flex flex-col md:flex-row gap-3">
+          <div class="relative flex-1">
+            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-500">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
-            <input type="email" id="email" required placeholder="admin@padron.py" value="admin@padron.py" 
-              class="w-full bg-slate-950/80 border border-slate-800 focus:border-red-500 rounded-xl pl-10 pr-4 py-3 text-sm text-slate-100 placeholder-slate-600 outline-none transition-all duration-200 focus:ring-2 focus:ring-red-500/20">
+            <input type="text" id="publicSearchInput" placeholder="N° de Cédula (Ej: 3686743) o nombre completo..." 
+              class="w-full bg-slate-950/80 border border-slate-800 focus:border-red-500 rounded-2xl pl-12 pr-4 py-3.5 text-sm text-slate-100 placeholder-slate-650 outline-none transition-all duration-200 focus:ring-2 focus:ring-red-500/20"
+              onkeydown="if(event.key==='Enter')realizarConsultaPublica()">
           </div>
+          <button onclick="realizarConsultaPublica()"
+            class="py-3.5 px-8 bg-gradient-to-r from-red-600 via-rose-600 to-red-750 hover:from-red-500 hover:to-rose-500 active:scale-[0.98] text-white font-bold rounded-2xl shadow-lg shadow-red-950/20 transition-all duration-155 text-sm tracking-wide shrink-0 cursor-pointer">
+            Consultar Padrón
+          </button>
         </div>
 
-        <div>
-          <label class="block text-slate-400 font-semibold text-xs uppercase tracking-wider mb-2">Contraseña</label>
-          <div class="relative">
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-              </svg>
-            </div>
-            <input type="password" id="password" required placeholder="123456" value="123456"
-              class="w-full bg-slate-950/80 border border-slate-800 focus:border-red-500 rounded-xl pl-10 pr-4 py-3 text-sm text-slate-100 placeholder-slate-600 outline-none transition-all duration-200 focus:ring-2 focus:ring-red-500/20">
+        <!-- Search results container -->
+        <div id="searchResults" class="space-y-4 max-h-[500px] overflow-y-auto pr-1">
+          <!-- Placeholder state -->
+          <div class="text-center py-10 text-slate-500 text-xs font-light select-none">
+            Los resultados de su consulta aparecerán en esta sección.
           </div>
         </div>
-
-        <div>
-          <label class="block text-slate-400 font-semibold text-xs uppercase tracking-wider mb-2">Ciudad / Distrito</label>
-          <div class="relative">
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-              </svg>
-            </div>
-            <select id="loginCiudad" required
-              class="w-full bg-slate-950/80 border border-slate-800 focus:border-red-500 rounded-xl pl-10 pr-4 py-3 text-sm text-slate-400 outline-none transition-all duration-200 focus:ring-2 focus:ring-red-500/20">
-              <option value="">Seleccione Ciudad...</option>
-              <option value="276">BELLA VISTA</option>
-              <option value="139">HOHENAU</option>
-              <option value="148">OBLIGADO</option>
-            </select>
-          </div>
-        </div>
-
-        <button type="submit" id="btnLogin"
-          class="w-full py-3.5 bg-gradient-to-r from-red-600 via-rose-600 to-red-750 hover:from-red-500 hover:to-rose-500 active:scale-[0.98] text-white font-semibold rounded-xl shadow-lg shadow-red-900/20 hover:shadow-red-800/30 transition-all duration-150 text-sm tracking-wide">
-          Ingresar al Sistema
-        </button>
-      </form>
-
-      <div class="mt-6 border-t border-slate-800/60 pt-4 text-center text-xs text-slate-500">
-        Credenciales Demo: <span class="text-slate-400">admin@padron.py</span> / <span class="text-slate-400">123456</span>
       </div>
     </div>
-    <div class="mt-6 text-center text-[10px] text-slate-500 font-light max-w-xs mx-auto leading-relaxed select-none">
-      Sistema desarrollado por el <span class="font-semibold text-slate-400">CNID</span>, Centro Nacional de Información Digital y Nuevos Registros, 17789
-    </div>
-  </div>
 
+    <!-- View 2: Authentication Login Panel (Hidden by default) -->
+    <div id="viewLogin" class="w-full max-w-md space-y-6 hidden transition-all duration-300">
+      <div class="bg-slate-900/60 custom-backdrop border border-slate-800/80 rounded-3xl p-6 md:p-8 shadow-2xl shadow-slate-950/50">
+        <div class="text-center mb-8">
+          <div class="mb-4">
+            <img src="/logo.png" class="w-20 h-20 mx-auto object-contain drop-shadow-[0_0_12px_rgba(239,68,68,0.3)]">
+          </div>
+          <h2 class="text-2xl font-extrabold tracking-tight text-slate-100">
+            Ingreso al Sistema
+          </h2>
+          <p class="text-slate-400 text-xs mt-1.5 font-light">
+            Área de control para veedores y administradores
+          </p>
+        </div>
+
+        <form id="loginForm" class="space-y-5">
+          <div>
+            <label class="block text-slate-450 font-semibold text-[10px] uppercase tracking-wider mb-2">Correo electrónico</label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+                </svg>
+              </div>
+              <input type="email" id="email" required placeholder="veedor@padron.py" value="" 
+                class="w-full bg-slate-950/80 border border-slate-800 focus:border-red-500 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-100 placeholder-slate-600 outline-none transition-all duration-200 focus:ring-2 focus:ring-red-500/20">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-slate-455 font-semibold text-[10px] uppercase tracking-wider mb-2">Contraseña</label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </div>
+              <input type="password" id="password" required placeholder="Ingrese contraseña" value=""
+                class="w-full bg-slate-950/80 border border-slate-800 focus:border-red-500 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-100 placeholder-slate-600 outline-none transition-all duration-200 focus:ring-2 focus:ring-red-500/20">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-slate-455 font-semibold text-[10px] uppercase tracking-wider mb-2">Ciudad / Distrito</label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+              </div>
+              <select id="loginCiudad" required
+                class="w-full bg-slate-950/80 border border-slate-800 focus:border-red-500 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-400 outline-none transition-all duration-200 focus:ring-2 focus:ring-red-500/20">
+                <option value="">Seleccione Ciudad...</option>
+                <option value="276">BELLA VISTA</option>
+                <option value="139">HOHENAU</option>
+                <option value="148">OBLIGADO</option>
+              </select>
+            </div>
+          </div>
+
+          <button type="submit" id="btnLogin"
+            class="w-full py-3 bg-gradient-to-r from-red-600 via-rose-600 to-red-750 hover:from-red-500 hover:to-rose-500 active:scale-[0.98] text-white font-bold rounded-xl shadow-lg shadow-red-950/20 transition-all duration-150 text-xs tracking-wide cursor-pointer">
+            Ingresar al Sistema
+          </button>
+        </form>
+
+        <div class="mt-6 border-t border-slate-800/60 pt-4 text-center text-[10px] text-slate-550 select-none">
+          Demo: <span class="text-slate-450 font-medium">admin@padron.py</span> / <span class="text-slate-450 font-medium">123456</span> (Bella Vista)
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Author/CNID Footer -->
+  <footer class="mt-auto py-5 text-center text-[10px] text-slate-550 font-light select-none z-10 bg-slate-950/30 border-t border-slate-900/60">
+    <div class="max-w-md mx-auto px-4 leading-relaxed">
+      Sistema desarrollado por el <span class="font-bold text-slate-450">CNID</span>, Centro Nacional de Información Digital y Nuevos Registros, 17789
+    </div>
+  </footer>
+
+  <!-- Client APIs & Scripts -->
   <script src="/js/api.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js').catch(() => {});
     }
 
-    const form = document.getElementById('loginForm');
-    const btn = document.getElementById('btnLogin');
+    // Toggle logic between views
+    const btnToggle = document.getElementById('btnToggleView');
+    const viewSearch = document.getElementById('viewSearch');
+    const viewLogin = document.getElementById('viewLogin');
 
-    form.addEventListener('submit', async (e) => {
+    btnToggle.addEventListener('click', () => {
+      const current = btnToggle.getAttribute('data-view');
+      if (current === 'login') {
+        // Go to Login View
+        viewSearch.classList.add('hidden');
+        viewLogin.classList.remove('hidden');
+        btnToggle.setAttribute('data-view', 'search');
+        btnToggle.innerHTML = `
+          <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <span>Consultar Padrón</span>
+        `;
+      } else {
+        // Go to Search View
+        viewLogin.classList.add('hidden');
+        viewSearch.classList.remove('hidden');
+        btnToggle.setAttribute('data-view', 'login');
+        btnToggle.innerHTML = `
+          <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+          </svg>
+          <span>Iniciar Sesión</span>
+        `;
+      }
+    });
+
+    // Public Consultation Action
+    async function realizarConsultaPublica() {
+      const term = document.getElementById('publicSearchInput').value.trim();
+      const resultsDiv = document.getElementById('searchResults');
+      if (!term) return;
+
+      resultsDiv.innerHTML = `
+        <div class="text-center py-10">
+          <div class="w-6 h-6 border-2 border-red-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+          <p class="text-slate-500 text-xs animate-pulse">Consultando Padrón Nacional...</p>
+        </div>
+      `;
+
+      try {
+        const electores = await api.consultarPublico(term);
+        if (!electores || electores.length === 0) {
+          resultsDiv.innerHTML = `
+            <div class="p-6 bg-slate-950/40 border border-slate-850 rounded-2xl text-center text-slate-400 text-xs">
+              ⚠️ No se encontraron registros coincidentes. Verifique su número de cédula o nombre.
+            </div>
+          `;
+          return;
+        }
+
+        resultsDiv.innerHTML = electores.map(e => {
+          const isVoted = e.estado === 'ya_voto';
+          const badgeClass = isVoted 
+            ? 'bg-emerald-950/80 border-emerald-800 text-emerald-400' 
+            : 'bg-amber-950/80 border-amber-800 text-amber-400';
+          const badgeText = isVoted ? 'YA VOTÓ' : 'HABILITADO';
+
+          return `
+            <div class="bg-slate-950/75 border border-slate-850 rounded-2xl p-5 hover:border-slate-800 transition-all shadow-md">
+              <div class="flex items-center justify-between gap-4 border-b border-slate-900 pb-3 mb-3">
+                <div class="min-w-0">
+                  <h4 class="font-extrabold text-sm text-slate-100 truncate">${e.nombre}</h4>
+                  <span class="text-[10px] text-slate-500 font-mono tracking-wider">C.I. N° ${parseInt(e.ci).toLocaleString('es-PY')}</span>
+                </div>
+                <span class="px-2 py-0.5 border rounded-md text-[9px] font-extrabold tracking-wider ${badgeClass}">${badgeText}</span>
+              </div>
+              
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+                <div>
+                  <span class="text-slate-500 block uppercase font-bold text-[8px] tracking-wide">Distrito / Ciudad</span>
+                  <span class="text-slate-300 font-semibold truncate block">${e.barrio_nombre || '-'}</span>
+                </div>
+                <div class="col-span-2">
+                  <span class="text-slate-500 block uppercase font-bold text-[8px] tracking-wide">Local de Votación</span>
+                  <span class="text-slate-300 font-semibold truncate block" title="${e.mesa_local || '-'}">${e.mesa_local || '-'}</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <span class="text-slate-500 block uppercase font-bold text-[8px] tracking-wide">Mesa</span>
+                    <span class="text-slate-100 font-extrabold">${e.mesa_numero || '-'}</span>
+                  </div>
+                  <div>
+                    <span class="text-slate-500 block uppercase font-bold text-[8px] tracking-wide">Orden</span>
+                    <span class="text-slate-100 font-extrabold">${e.orden || '-'}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      } catch (err) {
+        resultsDiv.innerHTML = `
+          <div class="p-6 bg-rose-950/40 border border-rose-900 rounded-2xl text-center text-rose-450 text-xs">
+            ❌ Ocurrió un error al conectar con el servidor: ${err.message}
+          </div>
+        `;
+      }
+    }
+
+    // Login Form Submit handler
+    const loginForm = document.getElementById('loginForm');
+    const loginBtn = document.getElementById('btnLogin');
+
+    loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      btn.disabled = true; 
-      btn.textContent = 'Verificando...';
+      loginBtn.disabled = true; 
+      loginBtn.textContent = 'Autenticando...';
       try {
         const ciudadSelect = document.getElementById('loginCiudad');
         const data = await api.login(document.getElementById('email').value, document.getElementById('password').value);
@@ -129,8 +304,8 @@
         window.location.href = '/app.html';
       } catch (err) {
         alert(err.message || 'Error de login');
-        btn.disabled = false; 
-        btn.textContent = 'Ingresar al Sistema';
+        loginBtn.disabled = false; 
+        loginBtn.textContent = 'Ingresar al Sistema';
       }
     });
   </script>

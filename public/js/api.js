@@ -7,7 +7,7 @@ function getToken() {
 async function apiFetch(path, options = {}) {
   let url = `${API_BASE}${path}`;
   const method = (options.method || 'GET').toUpperCase();
-  if (method === 'GET' && !path.includes('/auth/')) {
+  if (method === 'GET' && !path.includes('/auth/') && !path.includes('/public/')) {
     const bId = localStorage.getItem('selected_barrio_id');
     if (bId) {
       const urlObj = new URL(url, window.location.origin);
@@ -52,6 +52,7 @@ async function apiFetch(path, options = {}) {
 const api = {
   login: (email, password) => apiFetch('/auth/login', { method: 'POST', body: { email, password } }),
   me: () => apiFetch('/auth/me'),
+  consultarPublico: (buscar) => apiFetch('/electores/public/consultar?buscar=' + encodeURIComponent(buscar)),
   electores: (params = {}) => {
     const qs = new URLSearchParams(params).toString();
     return apiFetch(`/electores?${qs}`);

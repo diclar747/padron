@@ -2,6 +2,36 @@ const express = require('express');
 const { authMiddleware, checkPermiso } = require('./auth');
 const router = express.Router();
 
+// Consulta pública de electores (unauthenticated)
+router.get('/public/consultar', async (req, res) => {
+  const { buscar } = req.query;
+  if (!buscar) return res.status(400).json({ error: 'Falta término de búsqueda' });
+  
+  let sql = `
+    SELECT 
+      CONCAT(e.NOMBRE, ' ', COALESCE(e.APELLIDO, '')) as nombre, 
+      e.NUMERO_CED as ci, 
+      s.NDISTRITO as barrio_nombre, 
+      e.MESA as mesa_numero, 
+      sl.NOMBRE_LOC as mesa_local, 
+      e.ORDEN as orden,
+      CASE WHEN e.votado = 1 THEN 'ya_voto' ELSE 'no_voto' END as estado
+    FROM mas_pda e
+    LEFT JOIN seccio s ON e.CODIGO_SEC = s.CODIGO_SEC
+    LEFT JOIN secc_local sl ON e.SEC_LOC = sl.SECC_LOC
+    WHERE e.NUMERO_CED = ? OR e.NOMBRE ILIKE ? OR e.APELLIDO ILIKE ?
+    ORDER BY e.APELLIDO, e.NOMBRE LIMIT 5
+  `;
+  
+  try {
+    const searchParam = `%${buscar}%`;
+    const [rows] = await req.db.query(sql, [buscar, searchParam, searchParam]);
+    res.json(rows);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Listar electores con filtros de la base de datos real
 router.get('/', authMiddleware, (req, res, next) => {
   // Si busca por texto, permitimos el acceso si tiene permiso de 'dashboard' o de 'electores'
