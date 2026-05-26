@@ -26,12 +26,32 @@
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased selection:bg-blue-500 selection:text-white">
   
-  <header class="fixed top-0 left-0 md:left-64 right-0 z-40 bg-slate-900/80 backdrop-blur-xl border-b border-slate-800/80 px-6 py-4 flex items-center justify-between shadow-lg shadow-slate-950/20">
-    <h1 class="font-extrabold tracking-tight text-lg bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent uppercase">
-      Padrón Electoral
-    </h1>
+  <header class="fixed top-0 left-0 md:left-64 right-0 z-40 bg-slate-900/80 backdrop-blur-xl border-b border-slate-800/80 px-6 py-2 flex items-center justify-between shadow-lg shadow-slate-950/20">
     <div class="flex items-center gap-3">
-      <div id="userDisplay" class="px-4 py-2 bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/60 rounded-xl text-xs font-semibold text-slate-200 transition-all duration-150 flex items-center gap-2 cursor-pointer shadow-inner">
+      <img src="/logo.png" class="w-8 h-8 object-contain md:hidden">
+      <h1 class="font-extrabold tracking-tight text-sm md:text-lg bg-gradient-to-r from-red-400 via-rose-300 to-red-500 bg-clip-text text-transparent uppercase select-none">
+        Padrón Electoral ANR
+      </h1>
+    </div>
+    <div class="flex items-center gap-4">
+      <!-- Fullscreen Toggle Button -->
+      <button id="fullscreenBtn" class="p-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 rounded-xl transition-all cursor-pointer" title="Pantalla Completa">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75v4.5m0-4.5h-4.5m4.5 0L15 9m5.25 11.25v-4.5m0 4.5h-4.5m4.5 0L15 15" />
+        </svg>
+      </button>
+
+      <!-- Notifications Icon Mockup -->
+      <button class="relative p-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 rounded-xl transition-all cursor-pointer" title="Notificaciones">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+        </svg>
+        <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full animate-ping"></span>
+        <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
+      </button>
+
+      <!-- User Avatar / Info Trigger -->
+      <div id="userDisplay" class="px-3 py-1.5 bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700/50 rounded-xl text-xs font-semibold text-slate-200 transition-all duration-150 flex items-center gap-2 cursor-pointer shadow-inner">
         <!-- User dynamic details -->
       </div>
     </div>
@@ -43,15 +63,20 @@
   </div>
 
   <!-- Responsive Navigation -->
-  <nav class="app-nav fixed bottom-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-xl border-t border-slate-800/80 flex justify-around py-1.5 px-2 md:top-0 md:bottom-0 md:right-auto md:left-0 md:w-64 md:flex-col md:justify-start md:py-20 md:px-4 md:border-r md:border-t-0" id="appNav">
-    <div class="hidden md:flex flex-col items-center mb-8 px-4 text-center">
-      <div class="p-3 bg-blue-500/10 border border-blue-500/20 rounded-2xl mb-3 text-blue-400">
-        <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
+  <nav class="app-nav fixed bottom-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-xl border-t border-slate-800/80 flex justify-around py-1.5 px-2 md:top-0 md:bottom-0 md:right-auto md:left-0 md:w-64 md:flex-col md:justify-start md:py-16 md:px-4 md:border-r md:border-t-0" id="appNav">
+    <!-- Toggle Sidebar Button (Desktop Only) -->
+    <button id="sidebarToggleBtn" class="hidden md:flex absolute top-6 right-[-12px] w-6 h-6 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-400 hover:text-slate-100 rounded-full items-center justify-center z-50 cursor-pointer shadow-md transition-all active:scale-95">
+      <svg id="sidebarToggleIcon" class="w-3 h-3 transform transition-transform duration-200" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+      </svg>
+    </button>
+
+    <div class="hidden md:flex flex-col items-center mb-8 px-4 text-center" id="sidebarLogoContainer">
+      <div class="mb-3">
+        <img src="/logo.png" class="w-14 h-14 object-contain drop-shadow-[0_0_10px_rgba(239,68,68,0.2)]">
       </div>
-      <div class="text-sm font-bold tracking-wide text-slate-200">MENU PRINCIPAL</div>
-      <div class="text-[10px] text-slate-500 mt-0.5">Control Electoral</div>
+      <div class="text-sm font-bold tracking-wide text-slate-200" id="sidebarLogoText">PADRÓN ELECTORAL</div>
+      <div class="text-[10px] text-red-500 mt-0.5 font-bold uppercase tracking-wider" id="sidebarLogoSubtext">Partido Colorado</div>
     </div>
 
     <div class="flex md:flex-col justify-around w-full gap-1 md:gap-1.5">
@@ -71,29 +96,78 @@
         <svg class="w-5 h-5 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
         <span>Mesas</span>
       </button>
-      <button data-page="mapa" class="flex flex-col items-center justify-center gap-1 py-1 px-3 text-[10px] md:text-sm font-medium text-slate-400 hover:text-slate-200 transition-all rounded-xl cursor-pointer flex-1 md:flex-none md:flex-row md:justify-start md:gap-3.5 md:py-3 md:px-4 md:w-full group">
+
+      <!-- Desktop-only items (Hidden on mobile navigation bar) -->
+      <button data-page="mapa" class="hidden md:flex flex-col items-center justify-center gap-1 py-1 px-3 text-[10px] md:text-sm font-medium text-slate-400 hover:text-slate-200 transition-all rounded-xl cursor-pointer flex-1 md:flex-none md:flex-row md:justify-start md:gap-3.5 md:py-3 md:px-4 md:w-full group">
         <svg class="w-5 h-5 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 21 18 21 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
         <span>Mapa</span>
       </button>
-      <button data-page="logistica" class="flex flex-col items-center justify-center gap-1 py-1 px-3 text-[10px] md:text-sm font-medium text-slate-400 hover:text-slate-200 transition-all rounded-xl cursor-pointer flex-1 md:flex-none md:flex-row md:justify-start md:gap-3.5 md:py-3 md:px-4 md:w-full group">
+      <button data-page="logistica" class="hidden md:flex flex-col items-center justify-center gap-1 py-1 px-3 text-[10px] md:text-sm font-medium text-slate-400 hover:text-slate-200 transition-all rounded-xl cursor-pointer flex-1 md:flex-none md:flex-row md:justify-start md:gap-3.5 md:py-3 md:px-4 md:w-full group">
         <svg class="w-5 h-5 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
         <span>Logística</span>
       </button>
-      <button data-page="emergencia" class="flex flex-col items-center justify-center gap-1 py-1 px-3 text-[10px] md:text-sm font-medium text-slate-400 hover:text-slate-200 transition-all rounded-xl cursor-pointer flex-1 md:flex-none md:flex-row md:justify-start md:gap-3.5 md:py-3 md:px-4 md:w-full group">
+      <button data-page="emergencia" class="hidden md:flex flex-col items-center justify-center gap-1 py-1 px-3 text-[10px] md:text-sm font-medium text-slate-400 hover:text-slate-200 transition-all rounded-xl cursor-pointer flex-1 md:flex-none md:flex-row md:justify-start md:gap-3.5 md:py-3 md:px-4 md:w-full group">
         <svg class="w-5 h-5 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
         <span>Emergencia</span>
       </button>
-      <button data-page="admin" id="navAdminBtn" class="flex flex-col items-center justify-center gap-1 py-1 px-3 text-[10px] md:text-sm font-medium text-slate-400 hover:text-slate-200 transition-all rounded-xl cursor-pointer flex-1 md:flex-none md:flex-row md:justify-start md:gap-3.5 md:py-3 md:px-4 md:w-full group hidden">
+      <button data-page="admin" id="navAdminBtn" class="hidden flex-col items-center justify-center gap-1 py-1 px-3 text-[10px] md:text-sm font-medium text-slate-400 hover:text-slate-200 transition-all rounded-xl cursor-pointer flex-1 md:flex-none md:flex-row md:justify-start md:gap-3.5 md:py-3 md:px-4 md:w-full group">
         <svg class="w-5 h-5 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         <span>Administración</span>
       </button>
+
+      <!-- Mobile-only "More" menu button -->
+      <button id="mobileMoreBtn" class="flex md:hidden flex-col items-center justify-center gap-1 py-1 px-3 text-[10px] font-medium text-slate-400 hover:text-slate-200 transition-all rounded-xl cursor-pointer flex-1 group">
+        <svg class="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" stroke="none"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+        <span>Más</span>
+      </button>
     </div>
-    <div class="hidden md:flex flex-col mt-auto pt-4 border-t border-slate-850 text-[10px] text-slate-500 font-light leading-relaxed select-none">
+
+    <!-- Desktop logout button -->
+    <button id="logoutBtn" class="hidden md:flex items-center gap-3.5 py-3 px-4 w-full text-xs font-semibold text-slate-400 hover:text-rose-450 hover:bg-rose-950/20 border border-transparent hover:border-rose-900/30 rounded-xl transition-all duration-150 cursor-pointer group mt-auto mb-2">
+      <svg class="w-4 h-4 text-slate-500 group-hover:text-rose-450 group-hover:scale-110 transition-all" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"/></svg>
+      <span>Cerrar Sesión</span>
+    </button>
+
+    <div class="hidden md:flex flex-col pt-4 border-t border-slate-850 text-[10px] text-slate-500 font-light leading-relaxed select-none">
       <span>Desarrollado por:</span>
       <span class="font-semibold text-slate-400">CNID</span>
       <span>Centro Nacional de Información Digital y Nuevos Registros, 17789</span>
     </div>
   </nav>
+
+  <!-- Mobile More Menu Bottom Sheet Drawer -->
+  <div id="mobileMoreDrawer" class="fixed inset-0 z-[60] bg-slate-950/60 backdrop-blur-sm transition-opacity duration-300 opacity-0 pointer-events-none">
+    <div class="absolute bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800/80 rounded-t-[2rem] p-6 pb-8 transition-transform duration-300 translate-y-full shadow-2xl">
+      <div class="w-12 h-1.5 bg-slate-700 rounded-full mx-auto mb-6"></div>
+      <h3 class="text-xs font-bold text-slate-450 mb-4 uppercase tracking-wider text-center select-none">Menú de Opciones</h3>
+      
+      <div class="grid grid-cols-2 gap-3">
+        <button data-drawer-page="mapa" class="flex flex-col items-center justify-center p-4 bg-slate-950 border border-slate-850/80 hover:bg-slate-800 rounded-2xl gap-2 text-slate-350 cursor-pointer transition-all active:scale-95">
+          <svg class="w-6 h-6 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 21 18 21 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+          <span class="text-xs font-semibold">Mapa</span>
+        </button>
+        <button data-drawer-page="logistica" class="flex flex-col items-center justify-center p-4 bg-slate-950 border border-slate-850/80 hover:bg-slate-800 rounded-2xl gap-2 text-slate-300 cursor-pointer transition-all active:scale-95">
+          <svg class="w-6 h-6 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+          <span class="text-xs font-semibold">Logística</span>
+        </button>
+        <button data-drawer-page="emergencia" class="flex flex-col items-center justify-center p-4 bg-slate-950 border border-slate-850/80 hover:bg-slate-800 rounded-2xl gap-2 text-slate-300 cursor-pointer transition-all active:scale-95">
+          <svg class="w-6 h-6 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span class="text-xs font-semibold">Emergencia</span>
+        </button>
+        <button data-drawer-page="admin" id="drawerAdminBtn" class="flex flex-col items-center justify-center p-4 bg-slate-950 border border-slate-850/80 hover:bg-slate-800 rounded-2xl gap-2 text-slate-300 cursor-pointer transition-all active:scale-95 hidden">
+          <svg class="w-6 h-6 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          <span class="text-xs font-semibold">Administración</span>
+        </button>
+      </div>
+
+      <div class="mt-6 pt-6 border-t border-slate-800">
+        <button id="mobileLogoutBtn" class="w-full flex items-center justify-center gap-2.5 p-3.5 bg-rose-950/40 hover:bg-rose-900/40 border border-rose-900/30 text-rose-400 rounded-xl font-semibold text-xs tracking-wider transition-all active:scale-[0.98] cursor-pointer">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"/></svg>
+          CERRAR SESIÓN
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- Main Content Area -->
   <main class="pt-24 pb-28 px-4 md:pb-12 md:pl-72 md:pr-8 max-w-6xl mx-auto" id="mainContent">

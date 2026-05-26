@@ -18,13 +18,13 @@ function checkAuth() {
   const display = document.getElementById('userDisplay');
   const avatarHtml = currentUser.avatar 
     ? `<img src="${currentUser.avatar}" class="w-6 h-6 rounded-full object-cover border border-slate-700 shadow-sm" alt="Avatar">`
-    : `<div class="w-6 h-6 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-extrabold flex items-center justify-center text-[10px] uppercase shadow-sm border border-blue-500">${currentUser.nombre.charAt(0)}</div>`;
+    : `<div class="w-6 h-6 rounded-full bg-gradient-to-tr from-red-600 to-rose-600 text-white font-extrabold flex items-center justify-center text-[10px] uppercase shadow-sm border border-red-500">${currentUser.nombre.charAt(0)}</div>`;
 
   display.innerHTML = `
     ${avatarHtml}
     <span class="font-bold text-slate-100">${currentUser.nombre}</span>
     <span class="text-[10px] text-slate-400 bg-slate-900 border border-slate-700/60 px-2 py-0.5 rounded-md uppercase tracking-wider">${currentUser.rol}</span>
-    <span class="text-[10px] text-blue-400 bg-blue-950 border border-blue-900 px-2 py-0.5 rounded-md uppercase tracking-wider font-extrabold shadow-sm">${barrioNombre}</span>
+    <span class="text-[10px] text-red-400 bg-red-950/60 border border-red-900 px-2 py-0.5 rounded-md uppercase tracking-wider font-extrabold shadow-sm">${barrioNombre}</span>
   `;
   display.onclick = openProfileModal;
   updateNavigationMenu();
@@ -38,6 +38,15 @@ function updateNavigationMenu() {
       navBtnAdmin.classList.remove('hidden');
     } else {
       navBtnAdmin.classList.add('hidden');
+    }
+  }
+
+  const drawerBtnAdmin = document.getElementById('drawerAdminBtn');
+  if (drawerBtnAdmin) {
+    if (currentUser.rol === 'admin') {
+      drawerBtnAdmin.classList.remove('hidden');
+    } else {
+      drawerBtnAdmin.classList.add('hidden');
     }
   }
 
@@ -2257,6 +2266,84 @@ window.eliminarUsuarioAdmin = async function(id) {
 
 // ===================== INIT =====================
 if (!checkAuth()) {} else {
+  // Sidebar Collapse state initialization
+  if (localStorage.getItem('sidebar_collapsed') === 'true') {
+    document.body.classList.add('sidebar-collapsed');
+    const toggleIcon = document.getElementById('sidebarToggleIcon');
+    if (toggleIcon) toggleIcon.classList.add('rotate-180');
+  }
+
+  // Sidebar Toggle Button Click
+  const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
+  if (sidebarToggleBtn) {
+    sidebarToggleBtn.addEventListener('click', () => {
+      document.body.classList.toggle('sidebar-collapsed');
+      const isCollapsed = document.body.classList.contains('sidebar-collapsed');
+      localStorage.setItem('sidebar_collapsed', isCollapsed);
+      
+      const toggleIcon = document.getElementById('sidebarToggleIcon');
+      if (toggleIcon) {
+        if (isCollapsed) {
+          toggleIcon.classList.add('rotate-180');
+        } else {
+          toggleIcon.classList.remove('rotate-180');
+        }
+      }
+    });
+  }
+
+  // Mobile More Drawer toggle behavior
+  const mobileMoreBtn = document.getElementById('mobileMoreBtn');
+  const mobileMoreDrawer = document.getElementById('mobileMoreDrawer');
+  if (mobileMoreBtn && mobileMoreDrawer) {
+    mobileMoreBtn.addEventListener('click', () => {
+      mobileMoreDrawer.classList.add('open');
+    });
+
+    mobileMoreDrawer.addEventListener('click', (e) => {
+      if (e.target === mobileMoreDrawer) {
+        mobileMoreDrawer.classList.remove('open');
+      }
+    });
+  }
+
+  // Drawer buttons navigation
+  document.querySelectorAll('[data-drawer-page]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const page = btn.dataset.drawerPage;
+      if (page) {
+        navigate(page);
+        if (mobileMoreDrawer) {
+          mobileMoreDrawer.classList.remove('open');
+        }
+      }
+    });
+  });
+
+  // Fullscreen toggle logic
+  const fullscreenBtn = document.getElementById('fullscreenBtn');
+  if (fullscreenBtn) {
+    fullscreenBtn.addEventListener('click', () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => {
+          console.error(`Error enabling fullscreen: ${err.message}`);
+        });
+      } else {
+        document.exitFullscreen();
+      }
+    });
+  }
+
+  // Logout Buttons logic
+  const logoutBtn = document.getElementById('logoutBtn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => cerrarSesion());
+  }
+  const mobileLogoutBtn = document.getElementById('mobileLogoutBtn');
+  if (mobileLogoutBtn) {
+    mobileLogoutBtn.addEventListener('click', () => cerrarSesion());
+  }
+
   updateOfflineStatus();
   initSSE();
   navigate('dashboard');

@@ -94,15 +94,118 @@
 
 /* Active states for side navigation buttons */
 .app-nav button.active {
-  background-color: rgba(37, 99, 235, 0.15) !important;
-  color: #3b82f6 !important;
-  border-left: 3px solid #3b82f6 !important;
+  background-color: rgba(220, 38, 38, 0.15) !important;
+  color: #ef4444 !important;
+  border-left: 3px solid #ef4444 !important;
 }
 @media (max-width: 767px) {
   .app-nav button.active {
-    background-color: rgba(37, 99, 235, 0.15) !important;
-    color: #3b82f6 !important;
+    background-color: rgba(220, 38, 38, 0.15) !important;
+    color: #ef4444 !important;
     border-left: none !important;
-    border-top: 2px solid #3b82f6 !important;
+    border-top: 2px solid #ef4444 !important;
   }
+}
+
+/* Sidebar Collapse Transition */
+#appNav {
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), padding 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+header, main {
+  transition: left 0.25s cubic-bezier(0.4, 0, 0.2, 1), padding-left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Collapsed Sidebar Styles on Desktop */
+@media (min-width: 768px) {
+  body.sidebar-collapsed #appNav {
+    width: 5rem !important; /* w-20 */
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+  
+  body.sidebar-collapsed header {
+    left: 5rem !important;
+  }
+  
+  body.sidebar-collapsed main {
+    padding-left: 6.5rem !important; /* 5rem sidebar + 1.5rem gap */
+  }
+
+  body.sidebar-collapsed #appNav span,
+  body.sidebar-collapsed #appNav #sidebarLogoText,
+  body.sidebar-collapsed #appNav #sidebarLogoSubtext,
+  body.sidebar-collapsed #appNav .md\:flex.flex-col.items-center.mb-8 {
+    display: none !important;
+  }
+  
+  body.sidebar-collapsed #appNav button {
+    justify-content: center !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+  
+  body.sidebar-collapsed #appNav button svg {
+    margin-right: 0 !important;
+  }
+  
+  body.sidebar-collapsed #appNav .border-t {
+    display: none !important;
+  }
+}
+
+/* Mobile Slide-Up Drawer Animation */
+#mobileMoreDrawer {
+  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+#mobileMoreDrawer.open {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+#mobileMoreDrawer.open > div {
+  transform: translateY(0) !important;
+}
+
+/* Colorado Red Theme Utility Overrides */
+.focus\:border-blue-500:focus {
+  border-color: #ef4444 !important;
+}
+.focus\:ring-blue-500\/20:focus {
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2) !important;
+}
+.from-blue-600 {
+  --tw-gradient-from: #dc2626 !important;
+  --tw-gradient-to: rgb(220 38 38 / 0) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+.to-indigo-600 {
+  --tw-gradient-to: #e11d48 !important;
+}
+.from-blue-500 {
+  --tw-gradient-from: #ef4444 !important;
+  --tw-gradient-to: rgb(239 68 68 / 0) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+.to-indigo-500 {
+  --tw-gradient-to: #f43f5e !important;
+}
+.text-blue-400 {
+  color: #f87171 !important;
+}
+.text-blue-500 {
+  color: #ef4444 !important;
+}
+.bg-blue-500\/10 {
+  background-color: rgba(239, 68, 68, 0.1) !important;
+}
+.bg-blue-950 {
+  background-color: rgba(220, 38, 38, 0.15) !important;
+}
+.border-blue-900 {
+  border-color: rgba(220, 38, 38, 0.3) !important;
+}
+.border-blue-500 {
+  border-color: #ef4444 !important;
+}
+.bg-blue-500 {
+  background-color: #ef4444 !important;
 }

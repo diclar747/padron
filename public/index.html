@@ -23,25 +23,23 @@
   <meta name="theme-color" content="#0f172a">
   <style>
     body {
-      background: radial-gradient(circle at 50% 50%, #1e1b4b 0%, #0f172a 100%);
+      background: radial-gradient(circle at 50% 50%, #7f1d1d 0%, #0f172a 100%);
     }
   </style>
 </head>
 <body class="text-slate-100 flex items-center justify-center min-h-screen p-4 relative overflow-hidden">
   <!-- Glowing background elements -->
-  <div class="absolute top-[-10%] left-[-10%] w-96 h-96 bg-blue-600 rounded-full filter blur-[140px] opacity-25 animate-pulse duration-[6000ms]"></div>
-  <div class="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-indigo-600 rounded-full filter blur-[140px] opacity-25 animate-pulse duration-[8000ms]"></div>
+  <div class="absolute top-[-10%] left-[-10%] w-96 h-96 bg-red-700 rounded-full filter blur-[140px] opacity-25 animate-pulse duration-[6000ms]"></div>
+  <div class="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-rose-700 rounded-full filter blur-[140px] opacity-25 animate-pulse duration-[8000ms]"></div>
 
   <div class="w-full max-w-md relative z-10">
     <div class="bg-slate-900/70 backdrop-blur-2xl border border-slate-800/80 rounded-2xl p-8 shadow-2xl shadow-slate-950/50">
       <div class="text-center mb-8">
-        <div class="inline-flex p-3 bg-blue-500/10 border border-blue-500/20 rounded-2xl mb-4 text-blue-400">
-          <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
+        <div class="mb-4">
+          <img src="/logo.png" class="w-24 h-24 mx-auto object-contain drop-shadow-[0_0_15px_rgba(239,68,68,0.3)] animate-pulse duration-[5000ms]">
         </div>
-        <h1 class="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent">
-          PADRÓN ELECTORAL
+        <h1 class="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-red-400 via-rose-300 to-red-650 bg-clip-text text-transparent">
+          PADRÓN ELECTORAL ANR
         </h1>
         <p class="text-slate-400 text-sm mt-2 font-light">
           Sistema de veedores y control electoral
@@ -58,7 +56,7 @@
               </svg>
             </div>
             <input type="email" id="email" required placeholder="admin@padron.py" value="admin@padron.py" 
-              class="w-full bg-slate-950/80 border border-slate-800 focus:border-blue-500 rounded-xl pl-10 pr-4 py-3 text-sm text-slate-100 placeholder-slate-600 outline-none transition-all duration-200 focus:ring-2 focus:ring-blue-500/20">
+              class="w-full bg-slate-950/80 border border-slate-800 focus:border-red-500 rounded-xl pl-10 pr-4 py-3 text-sm text-slate-100 placeholder-slate-600 outline-none transition-all duration-200 focus:ring-2 focus:ring-red-500/20">
           </div>
         </div>
 
@@ -71,7 +69,7 @@
               </svg>
             </div>
             <input type="password" id="password" required placeholder="123456" value="123456"
-              class="w-full bg-slate-950/80 border border-slate-800 focus:border-blue-500 rounded-xl pl-10 pr-4 py-3 text-sm text-slate-100 placeholder-slate-600 outline-none transition-all duration-200 focus:ring-2 focus:ring-blue-500/20">
+              class="w-full bg-slate-950/80 border border-slate-800 focus:border-red-500 rounded-xl pl-10 pr-4 py-3 text-sm text-slate-100 placeholder-slate-600 outline-none transition-all duration-200 focus:ring-2 focus:ring-red-500/20">
           </div>
         </div>
 
@@ -84,7 +82,7 @@
               </svg>
             </div>
             <select id="loginCiudad" required
-              class="w-full bg-slate-950/80 border border-slate-800 focus:border-blue-500 rounded-xl pl-10 pr-4 py-3 text-sm text-slate-400 outline-none transition-all duration-200 focus:ring-2 focus:ring-blue-500/20">
+              class="w-full bg-slate-950/80 border border-slate-800 focus:border-red-500 rounded-xl pl-10 pr-4 py-3 text-sm text-slate-400 outline-none transition-all duration-200 focus:ring-2 focus:ring-red-500/20">
               <option value="">Seleccione Ciudad...</option>
               <option value="276">BELLA VISTA</option>
               <option value="139">HOHENAU</option>
@@ -94,7 +92,7 @@
         </div>
 
         <button type="submit" id="btnLogin"
-          class="w-full py-3.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-indigo-500 active:scale-[0.98] text-white font-semibold rounded-xl shadow-lg shadow-indigo-900/20 hover:shadow-indigo-800/30 transition-all duration-150 text-sm tracking-wide">
+          class="w-full py-3.5 bg-gradient-to-r from-red-600 via-rose-600 to-red-750 hover:from-red-500 hover:to-rose-500 active:scale-[0.98] text-white font-semibold rounded-xl shadow-lg shadow-red-900/20 hover:shadow-red-800/30 transition-all duration-150 text-sm tracking-wide">
           Ingresar al Sistema
         </button>
       </form>
