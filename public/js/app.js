@@ -50,8 +50,26 @@ function updateNavigationMenu() {
     }
   }
 
-  document.querySelectorAll('.app-nav button').forEach(btn => {
+  document.querySelectorAll('.app-nav button[data-page]').forEach(btn => {
     const page = btn.dataset.page;
+    if (page === 'admin') return;
+
+    if (currentUser.rol === 'admin') {
+      btn.classList.remove('hidden');
+      return;
+    }
+
+    const permisos = currentUser.permisos || {};
+    if (permisos[page] === true) {
+      btn.classList.remove('hidden');
+    } else {
+      btn.classList.add('hidden');
+    }
+  });
+
+  // Apply permission filtering to mobile drawer buttons
+  document.querySelectorAll('[data-drawer-page]').forEach(btn => {
+    const page = btn.dataset.drawerPage;
     if (page === 'admin') return;
 
     if (currentUser.rol === 'admin') {
@@ -742,13 +760,13 @@ async function renderElectores(container) {
         <input type="text" id="buscarElector" placeholder="Buscar por nombre o CI..." oninput="filtrarElectores()"
           class="bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-600 outline-none transition-all focus:ring-2 focus:ring-blue-500/20">
         
-        <select id="filterBarrio" onchange="filtrarElectores()"
+        <select id="filterBarrio" onchange="filtrarElectores(true)"
           class="bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl px-4 py-2.5 text-sm text-slate-400 outline-none transition-all">
           <option value="">Todos los Sectores</option>
           ${barriosData.map(b => `<option value="${b.id}">${b.nombre}</option>`).join('')}
         </select>
         
-        <select id="filterMesa" onchange="filtrarElectores()"
+        <select id="filterMesa" onchange="filtrarElectores(true)"
           class="bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl px-4 py-2.5 text-sm text-slate-400 outline-none transition-all">
           <option value="">Todas las Mesas</option>
           ${mesasData.map(m => `<option value="${m.id}">Mesa ${m.numero} - ${m.barrio_nombre}</option>`).join('')}
@@ -851,22 +869,62 @@ function renderListaElectores(lista) {
   }).join('');
 }
 
-window.filtrarElectores = function() {
-  const q = document.getElementById('buscarElector').value.toLowerCase();
-  const barrioId = document.getElementById('filterBarrio').value;
-  const mesaId = document.getElementById('filterMesa').value;
-
-  let filtrados = allElectores;
-  if (q) {
-    filtrados = filtrados.filter(e => (e.nombre + ' ' + (e.ci || '')).toLowerCase().includes(q));
+let filtrarElectoresTimeout = null;
+window.filtrarElectores = function(immediate = false) {
+  if (filtrarElectoresTimeout) {
+    clearTimeout(filtrarElectoresTimeout);
   }
-  if (barrioId) {
-    filtrados = filtrados.filter(e => e.barrio_id == barrioId);
+  
+  const runSearch = async () => {
+    const q = document.getElementById('buscarElector') ? document.getElementById('buscarElector').value.trim() : '';
+    const barrioId = document.getElementById('filterBarrio') ? document.getElementById('filterBarrio').value : '';
+    const mesaIdVal = document.getElementById('filterMesa') ? document.getElementById('filterMesa').value : '';
+    
+    const params = {};
+    if (q) params.buscar = q;
+    if (barrioId) params.barrio_id = barrioId;
+    
+    if (mesaIdVal) {
+      const id = parseInt(mesaIdVal);
+      params.mesa_numero = Math.floor(id % 100);
+      params.mesa_id = Math.floor((id % 100000) / 100);
+      params.barrio_id = Math.floor(id / 100000);
+    }
+    
+    const listDiv = document.getElementById('listaElectores');
+    if (listDiv) {
+      listDiv.innerHTML = '<div class="text-center py-8 text-slate-500 text-xs animate-pulse">Buscando en base de datos real...</div>';
+    }
+    
+    try {
+      allElectores = await api.electores(params);
+      renderListaElectores(allElectores);
+    } catch (err) {
+      showToast(err.message, 'error');
+      // Fallback to local DB offline search
+      let local = await localDB.getElectores();
+      if (q) {
+        local = local.filter(e => (e.nombre + ' ' + (e.ci || '')).toLowerCase().includes(q.toLowerCase()));
+      }
+      if (barrioId) {
+        local = local.filter(e => e.barrio_id == barrioId);
+      }
+      if (mesaIdVal) {
+        const id = parseInt(mesaIdVal);
+        const mesa_num = Math.floor(id % 100);
+        const sec_loc = Math.floor((id % 100000) / 100);
+        const cod_sec = Math.floor(id / 100000);
+        local = local.filter(e => e.barrio_id == cod_sec && e.mesa_id == sec_loc && e.mesa_numero == mesa_num);
+      }
+      renderListaElectores(local);
+    }
+  };
+  
+  if (immediate) {
+    runSearch();
+  } else {
+    filtrarElectoresTimeout = setTimeout(runSearch, 300);
   }
-  if (mesaId) {
-    filtrados = filtrados.filter(e => (e.barrio_id * 100000 + e.mesa_id * 100 + e.mesa_numero) == mesaId);
-  }
-  renderListaElectores(filtrados);
 };
 
 window.editarElector = async function(id) {
@@ -2342,6 +2400,10 @@ if (!checkAuth()) {} else {
   const mobileLogoutBtn = document.getElementById('mobileLogoutBtn');
   if (mobileLogoutBtn) {
     mobileLogoutBtn.addEventListener('click', () => cerrarSesion());
+  }
+  const mobileProfileBtn = document.getElementById('mobileProfileBtn');
+  if (mobileProfileBtn) {
+    mobileProfileBtn.addEventListener('click', () => openProfileModal());
   }
 
   // PWA Custom Install Banner Event Handler

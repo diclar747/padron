@@ -57,7 +57,7 @@ router.get('/', authMiddleware, (req, res, next) => {
     checkPermiso('electores')(req, res, next);
   }
 }, async (req, res) => {
-  const { estado, barrio_id, mesa_id, buscar } = req.query;
+  const { estado, barrio_id, mesa_id, mesa_numero, buscar } = req.query;
   
   let sql = `
     SELECT 
@@ -102,6 +102,11 @@ router.get('/', authMiddleware, (req, res, next) => {
   if (mesa_id) {
     sql += ' AND e.SEC_LOC = ?';
     params.push(mesa_id);
+  }
+  
+  if (mesa_numero) {
+    sql += ' AND e.MESA = ?';
+    params.push(parseInt(mesa_numero));
   }
   
   if (buscar) {
