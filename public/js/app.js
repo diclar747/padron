@@ -455,9 +455,57 @@ function calcularProbabilidadVoto(elector) {
   return { percentage: score, label, color, details: detail };
 }
 
+// Custom aesthetic confirmation modal dialog
+window.confirmarAccion = function(title, message) {
+  return new Promise((resolve) => {
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm transition-opacity duration-200';
+    modal.innerHTML = `
+      <div class="modal-card bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-sm w-full shadow-2xl relative text-center transform scale-95 transition-all duration-200">
+        <div class="w-12 h-12 bg-red-950/50 border border-red-800/60 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500 shadow-lg">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+        <h3 class="text-sm font-bold text-slate-100">${title}</h3>
+        <p class="text-slate-400 text-xs mt-2 leading-relaxed font-light">${message}</p>
+        
+        <div class="grid grid-cols-2 gap-3 mt-6">
+          <button id="btnConfirmNo" class="py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-200 text-xs font-semibold rounded-xl active:scale-[0.98] transition-all cursor-pointer">Cancelar</button>
+          <button id="btnConfirmYes" class="py-2.5 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white text-xs font-bold rounded-xl shadow-md shadow-red-950/20 active:scale-[0.98] transition-all cursor-pointer">Confirmar</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // trigger scale transition
+    setTimeout(() => {
+      modal.querySelector('.modal-card').classList.remove('scale-95');
+    }, 20);
+    
+    const cleanup = (val) => {
+      modal.classList.add('opacity-0');
+      modal.querySelector('.modal-card').classList.add('scale-95');
+      setTimeout(() => {
+        modal.remove();
+        resolve(val);
+      }, 200);
+    };
+    
+    document.getElementById('btnConfirmNo').onclick = () => cleanup(false);
+    document.getElementById('btnConfirmYes').onclick = () => cleanup(true);
+    
+    modal.onclick = (e) => {
+      if (e.target === modal) cleanup(false);
+    };
+  });
+};
+
 // 1-Click Vote Registration for Veedores (Online/Offline)
 window.registrarVotoRapido = async function(id, name) {
-  if (!confirm('¿Registrar que el elector "' + name + '" ya emitió su voto?')) return;
+  const confirmed = await window.confirmarAccion('Registrar Voto', `¿Registrar que el elector "${name}" ya emitió su voto?`);
+  if (!confirmed) return;
   
   const elector = allElectores.find(x => x.id === id) || { id };
   const updatedElector = { ...elector, estado: 'ya_voto' };
@@ -1006,7 +1054,8 @@ window.editarElector = async function(id) {
 };
 
 window.eliminarElector = async function(id) {
-  if (!confirm('¿Eliminar definitivamente este elector del padrón?')) return;
+  const confirmed = await window.confirmarAccion('Eliminar Elector', '¿Eliminar definitivamente este elector del padrón?');
+  if (!confirmed) return;
   try {
     await api.eliminarElector(id);
     showToast('Elector eliminado.');
@@ -2312,7 +2361,8 @@ window.editarUsuarioAdmin = function(id) {
 };
 
 window.eliminarUsuarioAdmin = async function(id) {
-  if (!confirm('¿Eliminar definitivamente este usuario de la base de datos?')) return;
+  const confirmed = await window.confirmarAccion('Eliminar Usuario', '¿Eliminar definitivamente este usuario de la base de datos?');
+  if (!confirmed) return;
   try {
     await api.usuarios.eliminar(id);
     showToast('Usuario eliminado.');
