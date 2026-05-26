@@ -22,9 +22,9 @@ function checkAuth() {
 
   display.innerHTML = `
     ${avatarHtml}
-    <span class="font-bold text-slate-100">${currentUser.nombre}</span>
-    <span class="text-[10px] text-slate-400 bg-slate-900 border border-slate-700/60 px-2 py-0.5 rounded-md uppercase tracking-wider">${currentUser.rol}</span>
-    <span class="text-[10px] text-red-400 bg-red-950/60 border border-red-900 px-2 py-0.5 rounded-md uppercase tracking-wider font-extrabold shadow-sm">${barrioNombre}</span>
+    <span class="font-bold text-slate-100 hidden md:inline">${currentUser.nombre}</span>
+    <span class="text-[10px] text-slate-400 bg-slate-900 border border-slate-700/60 px-2 py-0.5 rounded-md uppercase tracking-wider hidden sm:inline">${currentUser.rol}</span>
+    <span class="text-[10px] text-red-400 bg-red-950/60 border border-red-900 px-2 py-0.5 rounded-md uppercase tracking-wider font-extrabold shadow-sm hidden md:inline">${barrioNombre}</span>
   `;
   display.onclick = openProfileModal;
   updateNavigationMenu();
@@ -606,11 +606,11 @@ async function renderDashboard(container) {
             <p class="text-[10px] text-slate-500 mt-0.5">Consultar dónde vota y estado en tiempo real</p>
           </div>
         </div>
-        <div class="flex gap-2">
+        <div class="flex flex-col sm:flex-row gap-2">
           <input type="text" id="dashBuscar" placeholder="Ingrese nombre completo o N° de Cédula..." 
             class="flex-1 bg-slate-950 border border-slate-850 focus:border-blue-500 rounded-xl px-4 py-3 text-sm text-slate-100 placeholder-slate-600 outline-none transition-all focus:ring-2 focus:ring-blue-500/20"
             onkeydown="if(event.key==='Enter')buscarRapido()">
-          <button class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold px-6 py-3 rounded-xl text-sm transition-all active:scale-[0.98]" onclick="buscarRapido()">
+          <button class="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold px-6 py-3 rounded-xl text-sm transition-all active:scale-[0.98]" onclick="buscarRapido()">
             Consultar
           </button>
         </div>
@@ -2342,6 +2342,37 @@ if (!checkAuth()) {} else {
   const mobileLogoutBtn = document.getElementById('mobileLogoutBtn');
   if (mobileLogoutBtn) {
     mobileLogoutBtn.addEventListener('click', () => cerrarSesion());
+  }
+
+  // PWA Custom Install Banner Event Handler
+  let deferredPrompt;
+  const pwaBanner = document.getElementById('pwaInstallBanner');
+  const btnInstall = document.getElementById('btnPwaInstall');
+  const btnClose = document.getElementById('btnPwaClose');
+
+  if (pwaBanner && btnInstall && btnClose) {
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      if (sessionStorage.getItem('pwa_install_dismissed') !== 'true') {
+        pwaBanner.classList.add('show');
+      }
+    });
+
+    btnInstall.addEventListener('click', async () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log(`PWA Install Choice: ${outcome}`);
+        deferredPrompt = null;
+      }
+      pwaBanner.classList.remove('show');
+    });
+
+    btnClose.addEventListener('click', () => {
+      pwaBanner.classList.remove('show');
+      sessionStorage.setItem('pwa_install_dismissed', 'true');
+    });
   }
 
   updateOfflineStatus();

@@ -79,20 +79,28 @@
       <div class="text-[10px] text-red-500 mt-0.5 font-bold uppercase tracking-wider" id="sidebarLogoSubtext">Partido Colorado</div>
     </div>
 
-    <div class="flex md:flex-col justify-around w-full gap-1 md:gap-1.5">
-      <button data-page="dashboard" class="flex flex-col items-center justify-center gap-1 py-1 px-3 text-[10px] md:text-sm font-medium text-slate-400 hover:text-slate-200 transition-all rounded-xl cursor-pointer flex-1 md:flex-none md:flex-row md:justify-start md:gap-3.5 md:py-3 md:px-4 md:w-full group">
+    <div class="flex md:flex-col justify-around items-center w-full gap-1 md:gap-1.5">
+      <button data-page="dashboard" class="flex flex-col items-center justify-center gap-1 py-1 px-2 text-[10px] md:text-sm font-medium text-slate-400 hover:text-slate-200 transition-all rounded-xl cursor-pointer flex-1 md:flex-none md:flex-row md:justify-start md:gap-3.5 md:py-3 md:px-4 md:w-full group">
         <svg class="w-5 h-5 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
         <span>Inicio</span>
       </button>
-      <button data-page="electores" class="flex flex-col items-center justify-center gap-1 py-1 px-3 text-[10px] md:text-sm font-medium text-slate-400 hover:text-slate-200 transition-all rounded-xl cursor-pointer flex-1 md:flex-none md:flex-row md:justify-start md:gap-3.5 md:py-3 md:px-4 md:w-full group">
+      <button data-page="electores" class="flex flex-col items-center justify-center gap-1 py-1 px-2 text-[10px] md:text-sm font-medium text-slate-400 hover:text-slate-200 transition-all rounded-xl cursor-pointer flex-1 md:flex-none md:flex-row md:justify-start md:gap-3.5 md:py-3 md:px-4 md:w-full group">
         <svg class="w-5 h-5 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         <span>Electores</span>
       </button>
-      <button data-page="cargar" class="flex flex-col items-center justify-center gap-1 py-1 px-3 text-[10px] md:text-sm font-medium text-slate-400 hover:text-slate-200 transition-all rounded-xl cursor-pointer flex-1 md:flex-none md:flex-row md:justify-start md:gap-3.5 md:py-3 md:px-4 md:w-full group">
+
+      <!-- FAB Star in the Center (Mobile Only) -->
+      <button id="mobileMoreBtn" class="nav-fab md:hidden select-none active:scale-90" title="Más Opciones">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 .587l3.668 7.431 8.2 1.192-5.934 5.787 1.4 8.168L12 18.896l-7.334 3.858 1.4-8.168L.132 9.21l8.2-1.192z"/>
+        </svg>
+      </button>
+
+      <button data-page="cargar" class="flex flex-col items-center justify-center gap-1 py-1 px-2 text-[10px] md:text-sm font-medium text-slate-400 hover:text-slate-200 transition-all rounded-xl cursor-pointer flex-1 md:flex-none md:flex-row md:justify-start md:gap-3.5 md:py-3 md:px-4 md:w-full group">
         <svg class="w-5 h-5 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
         <span>Cargar</span>
       </button>
-      <button data-page="mesas" class="flex flex-col items-center justify-center gap-1 py-1 px-3 text-[10px] md:text-sm font-medium text-slate-400 hover:text-slate-200 transition-all rounded-xl cursor-pointer flex-1 md:flex-none md:flex-row md:justify-start md:gap-3.5 md:py-3 md:px-4 md:w-full group">
+      <button data-page="mesas" class="flex flex-col items-center justify-center gap-1 py-1 px-2 text-[10px] md:text-sm font-medium text-slate-400 hover:text-slate-200 transition-all rounded-xl cursor-pointer flex-1 md:flex-none md:flex-row md:justify-start md:gap-3.5 md:py-3 md:px-4 md:w-full group">
         <svg class="w-5 h-5 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
         <span>Mesas</span>
       </button>
@@ -113,12 +121,6 @@
       <button data-page="admin" id="navAdminBtn" class="hidden flex-col items-center justify-center gap-1 py-1 px-3 text-[10px] md:text-sm font-medium text-slate-400 hover:text-slate-200 transition-all rounded-xl cursor-pointer flex-1 md:flex-none md:flex-row md:justify-start md:gap-3.5 md:py-3 md:px-4 md:w-full group">
         <svg class="w-5 h-5 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         <span>Administración</span>
-      </button>
-
-      <!-- Mobile-only "More" menu button -->
-      <button id="mobileMoreBtn" class="flex md:hidden flex-col items-center justify-center gap-1 py-1 px-3 text-[10px] font-medium text-slate-400 hover:text-slate-200 transition-all rounded-xl cursor-pointer flex-1 group">
-        <svg class="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" stroke="none"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
-        <span>Más</span>
       </button>
     </div>
 
@@ -174,6 +176,21 @@
   </main>
 
   <div class="toast-container fixed top-24 right-4 z-[100] flex flex-col gap-2.5 max-w-sm pointer-events-none" id="toastContainer"></div>
+
+  <!-- PWA Install Banner Bottom Sheet -->
+  <div id="pwaInstallBanner" class="pwa-banner flex flex-col md:flex-row items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <img src="/logo.png" class="w-12 h-12 object-contain drop-shadow-[0_0_8px_rgba(239,68,68,0.3)]">
+      <div class="text-left">
+        <h4 class="text-xs font-bold text-slate-100 tracking-wide">Instalar Padrón ANR</h4>
+        <p class="text-[10px] text-slate-400 mt-0.5">Accede al buscador y control electoral directo desde tu pantalla de inicio.</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2.5 w-full md:w-auto">
+      <button id="btnPwaClose" class="flex-1 md:flex-none py-2 px-4 bg-slate-800 hover:bg-slate-700 text-slate-350 text-xs font-semibold rounded-xl active:scale-95 transition-all cursor-pointer">Cerrar</button>
+      <button id="btnPwaInstall" class="flex-1 md:flex-none py-2 px-5 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white text-xs font-bold rounded-xl active:scale-95 transition-all shadow-md shadow-red-950/20 cursor-pointer">Instalar App</button>
+    </div>
+  </div>
 
   <!-- Scripts -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
