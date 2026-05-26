@@ -15,6 +15,46 @@ async function migrate() {
   });
   console.log('Conectado a MySQL local.');
 
+  const bcrypt = require('bcryptjs');
+  const { v4: uuidv4 } = require('uuid');
+
+  // Asegurar la columna distrito en MySQL usuarios
+  const [columns] = await mysqlConn.query("SHOW COLUMNS FROM usuarios LIKE 'distrito'");
+  if (columns.length === 0) {
+    await mysqlConn.query("ALTER TABLE usuarios ADD COLUMN distrito VARCHAR(100) DEFAULT NULL");
+    console.log("Añadida columna 'distrito' a la tabla usuarios en MySQL local.");
+  }
+
+  const usersToSeed = [
+    // BELLA VISTA
+    { nombre: 'Admin Bella Vista', email: 'admin_bellavista@padron.py', password: '123456', rol: 'admin', distrito: 'BELLA VISTA', permisos: { dashboard: true, electores: true, cargar: true, mesas: true, mapa: true, logistica: true, emergencia: true } },
+    { nombre: 'Veedor 1 Bella Vista', email: 'veedor1_bellavista@padron.py', password: '123456', rol: 'veedor', distrito: 'BELLA VISTA', permisos: { dashboard: true, electores: true, cargar: true, mesas: true, mapa: true, logistica: false, emergencia: true } },
+    { nombre: 'Veedor 2 Bella Vista', email: 'veedor2_bellavista@padron.py', password: '123456', rol: 'veedor', distrito: 'BELLA VISTA', permisos: { dashboard: true, electores: true, cargar: true, mesas: true, mapa: true, logistica: false, emergencia: true } },
+    // HOHENAU
+    { nombre: 'Admin Hohenau', email: 'admin_hohenau@padron.py', password: '123456', rol: 'admin', distrito: 'HOHENAU', permisos: { dashboard: true, electores: true, cargar: true, mesas: true, mapa: true, logistica: true, emergencia: true } },
+    { nombre: 'Veedor 1 Hohenau', email: 'veedor1_hohenau@padron.py', password: '123456', rol: 'veedor', distrito: 'HOHENAU', permisos: { dashboard: true, electores: true, cargar: true, mesas: true, mapa: true, logistica: false, emergencia: true } },
+    { nombre: 'Veedor 2 Hohenau', email: 'veedor2_hohenau@padron.py', password: '123456', rol: 'veedor', distrito: 'HOHENAU', permisos: { dashboard: true, electores: true, cargar: true, mesas: true, mapa: true, logistica: false, emergencia: true } },
+    // OBLIGADO
+    { nombre: 'Admin Obligado', email: 'admin_obligado@padron.py', password: '123456', rol: 'admin', distrito: 'OBLIGADO', permisos: { dashboard: true, electores: true, cargar: true, mesas: true, mapa: true, logistica: true, emergencia: true } },
+    { nombre: 'Veedor 1 Obligado', email: 'veedor1_obligado@padron.py', password: '123456', rol: 'veedor', distrito: 'OBLIGADO', permisos: { dashboard: true, electores: true, cargar: true, mesas: true, mapa: true, logistica: false, emergencia: true } },
+    { nombre: 'Veedor 2 Obligado', email: 'veedor2_obligado@padron.py', password: '123456', rol: 'veedor', distrito: 'OBLIGADO', permisos: { dashboard: true, electores: true, cargar: true, mesas: true, mapa: true, logistica: false, emergencia: true } }
+  ];
+
+  for (const u of usersToSeed) {
+    const [existing] = await mysqlConn.query("SELECT id FROM usuarios WHERE email = ?", [u.email]);
+    if (existing.length === 0) {
+      const password_hash = await bcrypt.hash(u.password, 10);
+      const qr_uuid = uuidv4();
+      
+      await mysqlConn.query(
+        `INSERT INTO usuarios (nombre, email, password_hash, rol, qr_uuid, activo, permisos, distrito)
+         VALUES (?, ?, ?, ?, ?, 1, ?, ?)`,
+        [u.nombre, u.email, password_hash, u.rol, qr_uuid, JSON.stringify(u.permisos), u.distrito]
+      );
+      console.log(`Sembrado usuario ${u.email} en MySQL local.`);
+    }
+  }
+
   // Conectar a PostgreSQL Neon
   const pgClient = new Client({
     connectionString: process.env.DATABASE_URL,
@@ -50,6 +90,7 @@ async function migrate() {
       direccion VARCHAR(255) DEFAULT NULL,
       avatar VARCHAR(255) DEFAULT NULL,
       permisos JSONB DEFAULT NULL,
+      distrito VARCHAR(100) DEFAULT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `);
@@ -171,7 +212,7 @@ async function migrate() {
 
   // 2. Transferencia de datos
   const tables = [
-    { name: 'usuarios', cols: ['id', 'nombre', 'email', 'password_hash', 'rol', 'qr_uuid', 'activo', 'telefono', 'direccion', 'avatar', 'permisos', 'created_at'] },
+    { name: 'usuarios', cols: ['id', 'nombre', 'email', 'password_hash', 'rol', 'qr_uuid', 'activo', 'telefono', 'direccion', 'avatar', 'permisos', 'distrito', 'created_at'] },
     { name: 'seccio', cols: ['id', 'codigo_dep', 'ndepart', 'codigo_dis', 'ndistrito', 'zona', 'codigo_sec', 'descripcio', 'w_seccio', 'direccion', 'local_vota'] },
     { name: 'secc_local', cols: ['id', 'codigo_dep', 'codigo_dis', 'codigo_sec', 'codigo_loc', 'cod_local', 'nombre_loc', 'direccion', 'recibido', 'secc_loc'] },
     { name: 'mas_pda', cols: ['id', 'nombre', 'apellido', 'numero_ced', 'direccion', 'codigo_sec', 'mesa', 'sec_loc', 'votado', 'observaciones', 'veedor_id', 'lat_voto', 'lng_voto', 'orden'] },

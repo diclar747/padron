@@ -20,9 +20,21 @@ router.use(adminMiddleware);
 // GET /api/usuarios - Listar todos los usuarios
 router.get('/', async (req, res) => {
   try {
-    const [rows] = await req.db.query(
-      'SELECT id, nombre, email, rol, qr_uuid, activo, telefono, direccion, avatar, permisos, created_at FROM usuarios ORDER BY nombre'
-    );
+    // Consultar el distrito real en DB del admin solicitante para máxima seguridad
+    const [currentUserRows] = await req.db.query('SELECT distrito FROM usuarios WHERE id = ?', [req.user.id]);
+    const currentDistrito = currentUserRows[0]?.distrito;
+
+    let sql = 'SELECT id, nombre, email, rol, qr_uuid, activo, telefono, direccion, avatar, permisos, distrito, created_at FROM usuarios';
+    const params = [];
+
+    if (currentDistrito && currentDistrito !== 'TODOS') {
+      sql += ' WHERE distrito = ?';
+      params.push(currentDistrito);
+    }
+
+    sql += ' ORDER BY nombre';
+    const [rows] = await req.db.query(sql, params);
+
     // Parsear permisos para cada usuario
     const users = rows.map(u => {
       if (typeof u.permisos === 'string') {
@@ -38,13 +50,17 @@ router.get('/', async (req, res) => {
 
 // POST /api/usuarios - Crear un nuevo usuario
 router.post('/', async (req, res) => {
-  const { nombre, email, password, rol, activo, telefono, direccion, avatar, permisos } = req.body;
+  const { nombre, email, password, rol, activo, telefono, direccion, avatar, permisos, distrito } = req.body;
   
   if (!nombre || !email || !password) {
     return res.status(400).json({ error: 'Nombre, email y contraseña son requeridos' });
   }
 
   try {
+    // Consultar el distrito real en DB del admin solicitante para máxima seguridad
+    const [currentUserRows] = await req.db.query('SELECT distrito FROM usuarios WHERE id = ?', [req.user.id]);
+    const currentDistrito = currentUserRows[0]?.distrito;
+
     // Verificar si el email ya existe
     const [existing] = await req.db.query('SELECT id FROM usuarios WHERE email = ?', [email]);
     if (existing.length > 0) return res.status(400).json({ error: 'El correo electrónico ya existe' });
@@ -53,6 +69,15 @@ router.post('/', async (req, res) => {
     const qr_uuid = uuidv4();
     const isActivo = activo !== undefined ? (activo ? true : false) : true;
     const userRole = rol || 'veedor';
+    
+    // Si el administrador actual pertenece a un distrito, el nuevo usuario hereda ese distrito automáticamente
+    let userDistrito = null;
+    if (currentDistrito && currentDistrito !== 'TODOS') {
+      userDistrito = currentDistrito;
+    } else {
+      userDistrito = distrito || null;
+    }
+
     const userPerms = permisos ? JSON.stringify(permisos) : JSON.stringify({
       dashboard: true,
       electores: true,
@@ -64,9 +89,9 @@ router.post('/', async (req, res) => {
     });
 
     const [r] = await req.db.query(
-      `INSERT INTO usuarios (nombre, email, password_hash, rol, qr_uuid, activo, telefono, direccion, avatar, permisos) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [nombre, email, password_hash, userRole, qr_uuid, isActivo, telefono || null, direccion || null, avatar || null, userPerms]
+      `INSERT INTO usuarios (nombre, email, password_hash, rol, qr_uuid, activo, telefono, direccion, avatar, permisos, distrito) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [nombre, email, password_hash, userRole, qr_uuid, isActivo, telefono || null, direccion || null, avatar || null, userPerms, userDistrito]
     );
 
     res.json({ id: r.insertId, success: true });
@@ -77,13 +102,23 @@ router.post('/', async (req, res) => {
 
 // PUT /api/usuarios/:id - Actualizar usuario y permisos
 router.put('/:id', async (req, res) => {
-  const { nombre, email, password, rol, activo, telefono, direccion, avatar, permisos } = req.body;
+  const { nombre, email, password, rol, activo, telefono, direccion, avatar, permisos, distrito } = req.body;
   const userId = req.params.id;
 
   try {
+    // Consultar el distrito real en DB del admin solicitante para máxima seguridad
+    const [currentUserRows] = await req.db.query('SELECT distrito FROM usuarios WHERE id = ?', [req.user.id]);
+    const currentDistrito = currentUserRows[0]?.distrito;
+
     // Verificar si existe el usuario
     const [user] = await req.db.query('SELECT * FROM usuarios WHERE id = ?', [userId]);
     if (user.length === 0) return res.status(404).json({ error: 'Usuario no encontrado' });
+    const targetUser = user[0];
+
+    // Control de seguridad: administrador de distrito no puede editar usuarios de otros distritos
+    if (currentDistrito && currentDistrito !== 'TODOS' && targetUser.distrito !== currentDistrito) {
+      return res.status(451) && res.status(403).json({ error: 'No tienes permiso para editar usuarios de otros distritos' });
+    }
 
     // Verificar si el email ya existe en otro usuario
     const [existing] = await req.db.query('SELECT id FROM usuarios WHERE email = ? AND id != ?', [email, userId]);
@@ -108,6 +143,12 @@ router.put('/:id', async (req, res) => {
       params.push(password_hash);
     }
 
+    // Si es superadmin, permitir cambiar el distrito del usuario
+    if (!currentDistrito || currentDistrito === 'TODOS') {
+      query += ', distrito = ?';
+      params.push(distrito || null);
+    }
+
     query += ' WHERE id = ?';
     params.push(userId);
 
@@ -128,6 +169,20 @@ router.delete('/:id', async (req, res) => {
   }
 
   try {
+    // Consultar el distrito real en DB del admin solicitante para máxima seguridad
+    const [currentUserRows] = await req.db.query('SELECT distrito FROM usuarios WHERE id = ?', [req.user.id]);
+    const currentDistrito = currentUserRows[0]?.distrito;
+
+    // Verificar si existe el usuario
+    const [user] = await req.db.query('SELECT * FROM usuarios WHERE id = ?', [userId]);
+    if (user.length === 0) return res.status(404).json({ error: 'Usuario no encontrado' });
+    const targetUser = user[0];
+
+    // Control de seguridad: administrador de distrito no puede eliminar usuarios de otros distritos
+    if (currentDistrito && currentDistrito !== 'TODOS' && targetUser.distrito !== currentDistrito) {
+      return res.status(403).json({ error: 'No tienes permiso para eliminar usuarios de otros distritos' });
+    }
+
     await req.db.query('DELETE FROM usuarios WHERE id = ?', [userId]);
     res.json({ success: true });
   } catch (e) {

@@ -34,16 +34,20 @@ db.query = async function(sql, params = []) {
   const rows = res.rows || [];
   const result = [rows, res.fields];
 
+  let insertId = null;
   if (isInsert && rows.length > 0) {
-    result.insertId = rows[0].id;
-  } else {
-    result.insertId = null;
+    insertId = rows[0].id;
   }
+  result.insertId = insertId;
   result.affectedRows = res.rowCount;
+  rows.insertId = insertId;
+  rows.affectedRows = res.rowCount;
 
   // Make sure properties can be read when destructuring or direct access
-  Object.defineProperty(result, 'insertId', { value: result.insertId, enumerable: true });
-  Object.defineProperty(result, 'affectedRows', { value: result.affectedRows, enumerable: true });
+  Object.defineProperty(result, 'insertId', { value: insertId, enumerable: true });
+  Object.defineProperty(result, 'affectedRows', { value: res.rowCount, enumerable: true });
+  Object.defineProperty(rows, 'insertId', { value: insertId, enumerable: true });
+  Object.defineProperty(rows, 'affectedRows', { value: res.rowCount, enumerable: true });
 
   return result;
 };

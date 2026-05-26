@@ -57,7 +57,7 @@ router.post('/login', async (req, res) => {
     const user = rows[0];
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) return res.status(401).json({ error: 'Contrasena incorrecta' });
-    const token = jwt.sign({ id: user.id, rol: user.rol, nombre: user.nombre }, JWT_SECRET, { expiresIn: '24h' });
+    const token = jwt.sign({ id: user.id, rol: user.rol, nombre: user.nombre, distrito: user.distrito }, JWT_SECRET, { expiresIn: '24h' });
     res.json({ 
       token, 
       user: { 
@@ -68,6 +68,7 @@ router.post('/login', async (req, res) => {
         telefono: user.telefono,
         direccion: user.direccion,
         avatar: user.avatar,
+        distrito: user.distrito,
         permisos: typeof user.permisos === 'string' ? JSON.parse(user.permisos) : user.permisos
       } 
     });
@@ -79,7 +80,7 @@ router.post('/login', async (req, res) => {
 // Profile - Obtener datos del usuario logueado
 router.get('/me', authMiddleware, async (req, res) => {
   try {
-    const [rows] = await req.db.query('SELECT id, nombre, email, rol, qr_uuid, telefono, direccion, avatar, permisos FROM usuarios WHERE id = ?', [req.user.id]);
+    const [rows] = await req.db.query('SELECT id, nombre, email, rol, qr_uuid, telefono, direccion, avatar, permisos, distrito FROM usuarios WHERE id = ?', [req.user.id]);
     if (rows.length === 0) return res.status(404).json({ error: 'Usuario no encontrado' });
     const user = rows[0];
     if (typeof user.permisos === 'string') {
@@ -121,7 +122,7 @@ router.put('/profile', authMiddleware, async (req, res) => {
     await req.db.query(query, params);
 
     // Retornar los datos actualizados
-    const [rows] = await req.db.query('SELECT id, nombre, email, rol, qr_uuid, telefono, direccion, avatar, permisos FROM usuarios WHERE id = ?', [req.user.id]);
+    const [rows] = await req.db.query('SELECT id, nombre, email, rol, qr_uuid, telefono, direccion, avatar, permisos, distrito FROM usuarios WHERE id = ?', [req.user.id]);
     const user = rows[0];
     if (typeof user.permisos === 'string') {
       try { user.permisos = JSON.parse(user.permisos); } catch {}

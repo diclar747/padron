@@ -1792,6 +1792,7 @@ async function renderAdmin(container) {
           <thead>
             <tr class="border-b border-slate-800 text-slate-400 font-bold uppercase">
               <th class="pb-3 pl-2">Usuario</th>
+              <th class="pb-3">Ciudad/Distrito</th>
               <th class="pb-3">Contacto</th>
               <th class="pb-3 text-center">Rol</th>
               <th class="pb-3 text-center">Módulos Permitidos</th>
@@ -1801,7 +1802,7 @@ async function renderAdmin(container) {
           </thead>
           <tbody id="adminUsersList" class="divide-y divide-slate-800/40 text-slate-300">
             <tr>
-              <td colspan="6" class="text-center py-8 text-slate-500 text-xs animate-pulse">Cargando usuarios...</td>
+              <td colspan="7" class="text-center py-8 text-slate-500 text-xs animate-pulse">Cargando usuarios...</td>
             </tr>
           </tbody>
         </table>
@@ -1854,6 +1855,9 @@ async function cargarUsuariosAdminTable() {
               </div>
             </div>
           </td>
+          <td class="py-4 text-slate-300">
+            <span class="px-2 py-0.5 rounded bg-slate-950 border border-slate-850 text-indigo-400 text-[10px] font-semibold uppercase tracking-wider">${u.distrito || 'TODOS'}</span>
+          </td>
           <td class="py-4 text-slate-350">
             <p class="text-[11px] font-semibold">${u.telefono || '-'}</p>
             <p class="text-[9px] text-slate-500 truncate max-w-[150px]" title="${u.direccion || '-'}">${u.direccion || '-'}</p>
@@ -1892,6 +1896,22 @@ async function cargarUsuariosAdminTable() {
 window.abrirCrearUsuario = function() {
   const modal = document.createElement('div');
   modal.className = 'modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm';
+  
+  const isSuperAdmin = !currentUser.distrito || currentUser.distrito === 'TODOS';
+  const distritoSelectHtml = isSuperAdmin ? `
+    <div>
+      <label class="block text-slate-400 text-[10px] font-semibold uppercase tracking-wider mb-1.5">Distrito/Ciudad</label>
+      <select name="distrito" class="w-full bg-slate-950 border border-slate-850 focus:border-blue-500 rounded-xl px-3.5 py-2.5 text-xs text-slate-400 outline-none">
+        <option value="">Ninguno (Superadmin)</option>
+        <option value="BELLA VISTA">BELLA VISTA</option>
+        <option value="HOHENAU">HOHENAU</option>
+        <option value="OBLIGADO">OBLIGADO</option>
+      </select>
+    </div>
+  ` : `
+    <input type="hidden" name="distrito" value="${currentUser.distrito}">
+  `;
+
   modal.innerHTML = `
     <div class="modal-card bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-lg w-full shadow-2xl overflow-y-auto max-h-[90vh]">
       <h3 class="text-lg font-bold text-slate-100 mb-4 flex items-center gap-2">
@@ -1930,6 +1950,8 @@ window.abrirCrearUsuario = function() {
             </select>
           </div>
         </div>
+
+        ${isSuperAdmin ? `<div class="grid grid-cols-1 gap-4">${distritoSelectHtml}</div>` : distritoSelectHtml}
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
@@ -2056,6 +2078,21 @@ window.editarUsuarioAdmin = function(id) {
   const isSelf = u.id === currentUser.id;
   const p = u.permisos || {};
 
+  const isSuperAdmin = !currentUser.distrito || currentUser.distrito === 'TODOS';
+  const distritoSelectHtml = isSuperAdmin ? `
+    <div>
+      <label class="block text-slate-400 text-[10px] font-semibold uppercase tracking-wider mb-1.5">Distrito/Ciudad</label>
+      <select name="distrito" class="w-full bg-slate-950 border border-slate-850 focus:border-blue-500 rounded-xl px-3.5 py-2.5 text-xs text-slate-400 outline-none">
+        <option value="" ${!u.distrito?'selected':''}>Ninguno (Superadmin)</option>
+        <option value="BELLA VISTA" ${u.distrito==='BELLA VISTA'?'selected':''}>BELLA VISTA</option>
+        <option value="HOHENAU" ${u.distrito==='HOHENAU'?'selected':''}>HOHENAU</option>
+        <option value="OBLIGADO" ${u.distrito==='OBLIGADO'?'selected':''}>OBLIGADO</option>
+      </select>
+    </div>
+  ` : `
+    <input type="hidden" name="distrito" value="${u.distrito || ''}">
+  `;
+
   modal.innerHTML = `
     <div class="modal-card bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-lg w-full shadow-2xl overflow-y-auto max-h-[90vh]">
       <h3 class="text-lg font-bold text-slate-100 mb-4 flex items-center gap-2">
@@ -2096,6 +2133,8 @@ window.editarUsuarioAdmin = function(id) {
             ${isSelf ? '<input type="hidden" name="rol" value="admin">' : ''}
           </div>
         </div>
+
+        ${isSuperAdmin ? `<div class="grid grid-cols-1 gap-4">${distritoSelectHtml}</div>` : distritoSelectHtml}
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
