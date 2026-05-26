@@ -51,7 +51,7 @@ router.post('/', async (req, res) => {
 
     const password_hash = await bcrypt.hash(password, 10);
     const qr_uuid = uuidv4();
-    const isActivo = activo !== undefined ? (activo ? 1 : 0) : 1;
+    const isActivo = activo !== undefined ? (activo ? true : false) : true;
     const userRole = rol || 'veedor';
     const userPerms = permisos ? JSON.stringify(permisos) : JSON.stringify({
       dashboard: true,
@@ -90,7 +90,7 @@ router.put('/:id', async (req, res) => {
     if (existing.length > 0) return res.status(400).json({ error: 'El correo electrónico ya está registrado por otro usuario' });
 
     let query = 'UPDATE usuarios SET nombre = ?, email = ?, rol = ?, activo = ?, telefono = ?, direccion = ?';
-    const params = [nombre, email, rol, activo ? 1 : 0, telefono || null, direccion || null];
+    const params = [nombre, email, rol, activo ? true : false, telefono || null, direccion || null];
 
     if (avatar !== undefined) {
       query += ', avatar = ?';

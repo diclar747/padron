@@ -9,7 +9,7 @@ router.use(checkPermiso('logistica'));
 // Vehiculos GET
 router.get('/vehiculos', async (req, res) => {
   try {
-    const [rows] = await req.db.query('SELECT * FROM logistica_vehiculos WHERE activo = 1');
+    const [rows] = await req.db.query('SELECT * FROM logistica_vehiculos WHERE activo = true');
     res.json(rows);
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -41,7 +41,7 @@ router.get('/traslados', async (req, res) => {
       params.push(parseInt(barrio_id));
     }
     const [rows] = await req.db.query(`
-      SELECT t.*, CONCAT(e.NOMBRE, ' ', IFNULL(e.APELLIDO, '')) as elector_nombre, '' as elector_telefono, e.DIRECCION as elector_direccion,
+      SELECT t.*, CONCAT(e.NOMBRE, ' ', COALESCE(e.APELLIDO, '')) as elector_nombre, '' as elector_telefono, e.DIRECCION as elector_direccion,
              v.chofer, v.placa, v.tipo
       FROM logistica_traslados t
       JOIN mas_pda e ON t.elector_id = e.id

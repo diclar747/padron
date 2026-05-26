@@ -16,8 +16,8 @@ router.get('/', authMiddleware, checkPermiso('mesas'), async (req, res) => {
         -- unique id generated from hashing seccional + local + mesa
         (e.CODIGO_SEC * 100000 + e.SEC_LOC * 100 + e.MESA) as id,
         e.MESA as numero,
-        IFNULL(sl.NOMBRE_LOC, 'LOCAL GENERAL') as local,
-        IFNULL(sl.DIRECCION, '') as direccion,
+        COALESCE(sl.NOMBRE_LOC, 'LOCAL GENERAL') as local,
+        COALESCE(sl.DIRECCION, '') as direccion,
         CASE 
           WHEN s.NDISTRITO = 'HOHENAU' THEN -27.0852
           WHEN s.NDISTRITO = 'OBLIGADO' THEN -27.0335
@@ -60,8 +60,8 @@ router.get('/:id', authMiddleware, checkPermiso('mesas'), async (req, res) => {
       SELECT 
         (e.CODIGO_SEC * 100000 + e.SEC_LOC * 100 + e.MESA) as id,
         e.MESA as numero,
-        IFNULL(sl.NOMBRE_LOC, 'LOCAL GENERAL') as local,
-        IFNULL(sl.DIRECCION, '') as direccion
+        COALESCE(sl.NOMBRE_LOC, 'LOCAL GENERAL') as local,
+        COALESCE(sl.DIRECCION, '') as direccion
       FROM mas_pda e
       LEFT JOIN secc_local sl ON e.SEC_LOC = sl.SECC_LOC
       WHERE e.CODIGO_SEC = ? AND e.SEC_LOC = ? AND e.MESA = ?

@@ -17,7 +17,7 @@ router.get('/dashboard', authMiddleware, checkPermiso('dashboard'), async (req, 
     const [[no_votaron]] = await req.db.query(`SELECT COUNT(*) as total FROM mas_pda WHERE votado = 0 AND ${whereClause}`, params);
     
     // Total unique mesas combination
-    const [[mesas]] = await req.db.query(`SELECT COUNT(DISTINCT CODIGO_SEC, SEC_LOC, MESA) as total FROM mas_pda WHERE ${whereClause}`, params);
+    const [[mesas]] = await req.db.query(`SELECT COUNT(DISTINCT (CODIGO_SEC, SEC_LOC, MESA)) as total FROM mas_pda WHERE ${whereClause}`, params);
     
     let barriosSql = 'SELECT COUNT(*) as total FROM seccio';
     const barriosParams = [];

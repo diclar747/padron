@@ -52,7 +52,7 @@ function checkPermiso(modulo) {
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
   try {
-    const [rows] = await req.db.query('SELECT * FROM usuarios WHERE email = ? AND activo = 1', [email]);
+    const [rows] = await req.db.query('SELECT * FROM usuarios WHERE email = ? AND activo = true', [email]);
     if (rows.length === 0) return res.status(401).json({ error: 'Usuario no encontrado' });
     const user = rows[0];
     const valid = await bcrypt.compare(password, user.password_hash);

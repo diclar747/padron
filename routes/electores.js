@@ -32,7 +32,7 @@ router.get('/', authMiddleware, (req, res, next) => {
   let sql = `
     SELECT 
       e.id, 
-      CONCAT(e.NOMBRE, ' ', IFNULL(e.APELLIDO, '')) as nombre, 
+      CONCAT(e.NOMBRE, ' ', COALESCE(e.APELLIDO, '')) as nombre, 
       e.NUMERO_CED as ci, 
       e.DIRECCION as direccion, 
       e.CODIGO_SEC as barrio_id, 
@@ -75,7 +75,7 @@ router.get('/', authMiddleware, (req, res, next) => {
   }
   
   if (buscar) {
-    sql += ' AND (e.NOMBRE LIKE ? OR e.APELLIDO LIKE ? OR e.NUMERO_CED LIKE ?)';
+    sql += ' AND (e.NOMBRE ILIKE ? OR e.APELLIDO ILIKE ? OR e.NUMERO_CED ILIKE ?)';
     const searchParam = `%${buscar}%`;
     params.push(searchParam, searchParam, searchParam);
   }

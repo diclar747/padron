@@ -2,21 +2,51 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const mysql = require('mysql2/promise');
+const { Pool } = require('pg');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// MySQL pool
-const db = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'padron',
-  port: process.env.DB_PORT || 3306,
-  waitForConnections: true,
-  connectionLimit: 10,
+// PostgreSQL Neon pool
+const db = new Pool({
+  connectionString: process.env.DATABASE_URL || process.env.POSTGRES_URL,
+  ssl: { rejectUnauthorized: false }
 });
+
+// Wrap pg pool query to mimic mysql2 query signature
+const originalQuery = db.query.bind(db);
+db.query = async function(sql, params = []) {
+  // Convert ? to $1, $2, etc.
+  let index = 1;
+  let pgSql = sql.replace(/\?/g, () => `$${index++}`);
+
+  let isInsert = false;
+  if (pgSql.trim().toUpperCase().startsWith('INSERT ')) {
+    isInsert = true;
+    // Evitar duplicar RETURNING si ya existe
+    if (!pgSql.toUpperCase().includes('RETURNING')) {
+      pgSql += ' RETURNING id';
+    }
+  }
+
+  const res = await originalQuery(pgSql, params);
+
+  const rows = res.rows || [];
+  const result = [rows, res.fields];
+
+  if (isInsert && rows.length > 0) {
+    result.insertId = rows[0].id;
+  } else {
+    result.insertId = null;
+  }
+  result.affectedRows = res.rowCount;
+
+  // Make sure properties can be read when destructuring or direct access
+  Object.defineProperty(result, 'insertId', { value: result.insertId, enumerable: true });
+  Object.defineProperty(result, 'affectedRows', { value: result.affectedRows, enumerable: true });
+
+  return result;
+};
 
 // Attach db to requests
 app.use((req, res, next) => {
