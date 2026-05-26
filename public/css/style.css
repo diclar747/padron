@@ -1,0 +1,108 @@
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Toast container override */
+.toast-container {
+  pointer-events: none;
+}
+.toast {
+  pointer-events: auto;
+  animation: toastSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
+}
+@keyframes toastSlideIn {
+  from { transform: translateX(120%) scale(0.9); opacity: 0; }
+  to { transform: translateX(0) scale(1); opacity: 1; }
+}
+
+/* Leaflet Popup Premium Dark Theme styling overrides */
+.leaflet-popup-content-wrapper, .leaflet-popup-tip {
+  background: #1e293b !important;
+  color: #f1f5f9 !important;
+  border: 1px solid #334155 !important;
+  border-radius: 0.75rem !important;
+  font-family: 'Outfit', sans-serif !important;
+}
+.leaflet-popup-content {
+  margin: 0.75rem 1rem !important;
+  font-size: 0.85rem !important;
+  line-height: 1.4 !important;
+}
+.leaflet-popup-close-button {
+  color: #94a3b8 !important;
+  top: 6px !important;
+  right: 6px !important;
+}
+
+/* Custom styles for Leaflet heatmaps */
+.leaflet-container {
+  background: #0f172a !important;
+  outline: none;
+}
+
+/* Modal Pop animation */
+.modal-overlay {
+  backdrop-filter: blur(8px);
+  background: rgba(15, 23, 42, 0.75);
+}
+.modal-card {
+  animation: modalZoomIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes modalZoomIn {
+  from { transform: scale(0.92); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* HTML5 QR Code Scanner Styling Customizations */
+#reader {
+  border: none !important;
+  background: #0f172a !important;
+}
+#reader video {
+  border-radius: 1rem !important;
+  border: 1px solid #334155 !important;
+}
+#reader__dashboard_section_csr button {
+  background: linear-gradient(to right, #2563eb, #4f46e5) !important;
+  color: white !important;
+  border: none !important;
+  padding: 0.5rem 1rem !important;
+  border-radius: 0.75rem !important;
+  cursor: pointer !important;
+  font-weight: 600 !important;
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 0.8rem !important;
+  transition: all 0.2s !important;
+}
+#reader__dashboard_section_csr button:hover {
+  opacity: 0.9 !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Active states for side navigation buttons */
+.app-nav button.active {
+  background-color: rgba(37, 99, 235, 0.15) !important;
+  color: #3b82f6 !important;
+  border-left: 3px solid #3b82f6 !important;
+}
+@media (max-width: 767px) {
+  .app-nav button.active {
+    background-color: rgba(37, 99, 235, 0.15) !important;
+    color: #3b82f6 !important;
+    border-left: none !important;
+    border-top: 2px solid #3b82f6 !important;
+  }
+}

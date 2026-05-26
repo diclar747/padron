@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Padrón Electoral - Login</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Outfit', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+  <meta name="theme-color" content="#0f172a">
+  <style>
+    body {
+      background: radial-gradient(circle at 50% 50%, #1e1b4b 0%, #0f172a 100%);
+    }
+  </style>
+</head>
+<body class="text-slate-100 flex items-center justify-center min-h-screen p-4 relative overflow-hidden">
+  <!-- Glowing background elements -->
+  <div class="absolute top-[-10%] left-[-10%] w-96 h-96 bg-blue-600 rounded-full filter blur-[140px] opacity-25 animate-pulse duration-[6000ms]"></div>
+  <div class="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-indigo-600 rounded-full filter blur-[140px] opacity-25 animate-pulse duration-[8000ms]"></div>
+
+  <div class="w-full max-w-md relative z-10">
+    <div class="bg-slate-900/70 backdrop-blur-2xl border border-slate-800/80 rounded-2xl p-8 shadow-2xl shadow-slate-950/50">
+      <div class="text-center mb-8">
+        <div class="inline-flex p-3 bg-blue-500/10 border border-blue-500/20 rounded-2xl mb-4 text-blue-400">
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+        </div>
+        <h1 class="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent">
+          PADRÓN ELECTORAL
+        </h1>
+        <p class="text-slate-400 text-sm mt-2 font-light">
+          Sistema de veedores y control electoral
+        </p>
+      </div>
+
+      <form id="loginForm" class="space-y-5">
+        <div>
+          <label class="block text-slate-400 font-semibold text-xs uppercase tracking-wider mb-2">Correo electrónico</label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+              </svg>
+            </div>
+            <input type="email" id="email" required placeholder="admin@padron.py" value="admin@padron.py" 
+              class="w-full bg-slate-950/80 border border-slate-800 focus:border-blue-500 rounded-xl pl-10 pr-4 py-3 text-sm text-slate-100 placeholder-slate-600 outline-none transition-all duration-200 focus:ring-2 focus:ring-blue-500/20">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-slate-400 font-semibold text-xs uppercase tracking-wider mb-2">Contraseña</label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            </div>
+            <input type="password" id="password" required placeholder="123456" value="123456"
+              class="w-full bg-slate-950/80 border border-slate-800 focus:border-blue-500 rounded-xl pl-10 pr-4 py-3 text-sm text-slate-100 placeholder-slate-600 outline-none transition-all duration-200 focus:ring-2 focus:ring-blue-500/20">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-slate-400 font-semibold text-xs uppercase tracking-wider mb-2">Ciudad / Distrito</label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+            </div>
+            <select id="loginCiudad" required
+              class="w-full bg-slate-950/80 border border-slate-800 focus:border-blue-500 rounded-xl pl-10 pr-4 py-3 text-sm text-slate-400 outline-none transition-all duration-200 focus:ring-2 focus:ring-blue-500/20">
+              <option value="">Seleccione Ciudad...</option>
+              <option value="276">BELLA VISTA</option>
+              <option value="139">HOHENAU</option>
+              <option value="148">OBLIGADO</option>
+            </select>
+          </div>
+        </div>
+
+        <button type="submit" id="btnLogin"
+          class="w-full py-3.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-indigo-500 active:scale-[0.98] text-white font-semibold rounded-xl shadow-lg shadow-indigo-900/20 hover:shadow-indigo-800/30 transition-all duration-150 text-sm tracking-wide">
+          Ingresar al Sistema
+        </button>
+      </form>
+
+      <div class="mt-6 border-t border-slate-800/60 pt-4 text-center text-xs text-slate-500">
+        Credenciales Demo: <span class="text-slate-400">admin@padron.py</span> / <span class="text-slate-400">123456</span>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
+
+    const form = document.getElementById('loginForm');
+    const btn = document.getElementById('btnLogin');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      btn.disabled = true; 
+      btn.textContent = 'Verificando...';
+      try {
+        const ciudadSelect = document.getElementById('loginCiudad');
+        const data = await api.login(document.getElementById('email').value, document.getElementById('password').value);
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.setItem('selected_barrio_id', ciudadSelect.value);
+        localStorage.setItem('selected_barrio_nombre', ciudadSelect.options[ciudadSelect.selectedIndex].text);
+        window.location.href = '/app.html';
+      } catch (err) {
+        alert(err.message || 'Error de login');
+        btn.disabled = false; 
+        btn.textContent = 'Ingresar al Sistema';
+      }
+    });
+  </script>
+</body>
+</html>
