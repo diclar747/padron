@@ -36,8 +36,10 @@ function updateNavigationMenu() {
   if (navBtnAdmin) {
     if (currentUser.rol === 'admin') {
       navBtnAdmin.classList.remove('hidden');
+      navBtnAdmin.classList.add('flex');
     } else {
       navBtnAdmin.classList.add('hidden');
+      navBtnAdmin.classList.remove('flex');
     }
   }
 

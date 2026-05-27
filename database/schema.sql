@@ -1,25 +1,28 @@
-CREATE DATABASE IF NOT EXISTS padron CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE padron;
+-- ============================================================
+-- SCHEMA POSTGRESQL - Padrón Electoral ANR
+-- Compatible con Neon / Supabase / PostgreSQL
+-- ============================================================
 
 -- 1. Usuarios (veedores, coordinadores, logistica, candidato, admin)
 CREATE TABLE IF NOT EXISTS usuarios (
-  id INT AUTO_INCREMENT PRIMARY KEY,
+  id SERIAL PRIMARY KEY,
   nombre VARCHAR(255) NOT NULL,
   email VARCHAR(255) UNIQUE NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
-  rol ENUM('veedor','coordinador','logistica','candidato','admin') DEFAULT 'veedor',
+  rol VARCHAR(50) DEFAULT 'veedor',
   qr_uuid VARCHAR(36) UNIQUE,
-  activo TINYINT(1) DEFAULT 1,
+  activo BOOLEAN DEFAULT true,
   telefono VARCHAR(50) DEFAULT NULL,
   direccion VARCHAR(255) DEFAULT NULL,
   avatar VARCHAR(255) DEFAULT NULL,
-  permisos JSON DEFAULT NULL,
+  permisos JSONB DEFAULT NULL,
+  distrito VARCHAR(255) DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 2. Barrios
 CREATE TABLE IF NOT EXISTS barrios (
-  id INT AUTO_INCREMENT PRIMARY KEY,
+  id SERIAL PRIMARY KEY,
   nombre VARCHAR(255) NOT NULL,
   lat DECIMAL(10,8) DEFAULT NULL,
   lng DECIMAL(11,8) DEFAULT NULL,
@@ -29,35 +32,35 @@ CREATE TABLE IF NOT EXISTS barrios (
 
 -- 3. Mesas
 CREATE TABLE IF NOT EXISTS mesas (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  numero INT NOT NULL UNIQUE,
+  id SERIAL PRIMARY KEY,
+  numero INTEGER NOT NULL UNIQUE,
   local VARCHAR(255) NOT NULL,
   direccion VARCHAR(255) DEFAULT NULL,
   lat DECIMAL(10,8) DEFAULT NULL,
   lng DECIMAL(11,8) DEFAULT NULL,
-  electores_esperados INT DEFAULT 0,
-  barrio_id INT DEFAULT NULL,
+  electores_esperados INTEGER DEFAULT 0,
+  barrio_id INTEGER DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (barrio_id) REFERENCES barrios(id) ON DELETE SET NULL
 );
 
 -- 4. Electores
 CREATE TABLE IF NOT EXISTS electores (
-  id INT AUTO_INCREMENT PRIMARY KEY,
+  id SERIAL PRIMARY KEY,
   nombre VARCHAR(255) NOT NULL,
   ci VARCHAR(50) DEFAULT NULL,
   telefono VARCHAR(50) DEFAULT NULL,
   direccion VARCHAR(255) DEFAULT NULL,
-  barrio_id INT DEFAULT NULL,
+  barrio_id INTEGER DEFAULT NULL,
   lat DECIMAL(10,8) DEFAULT NULL,
   lng DECIMAL(11,8) DEFAULT NULL,
-  mesa_id INT DEFAULT NULL,
-  estado ENUM('confirmado','dudoso','no_vota','ausente','ya_voto') DEFAULT 'confirmado',
+  mesa_id INTEGER DEFAULT NULL,
+  estado VARCHAR(50) DEFAULT 'confirmado',
   observaciones TEXT DEFAULT NULL,
-  veedor_id INT DEFAULT NULL,
+  veedor_id INTEGER DEFAULT NULL,
   foto_ci VARCHAR(255) DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (barrio_id) REFERENCES barrios(id) ON DELETE SET NULL,
   FOREIGN KEY (mesa_id) REFERENCES mesas(id) ON DELETE SET NULL,
   FOREIGN KEY (veedor_id) REFERENCES usuarios(id) ON DELETE SET NULL
@@ -65,7 +68,7 @@ CREATE TABLE IF NOT EXISTS electores (
 
 -- 5. Vehiculos logistica
 CREATE TABLE IF NOT EXISTS logistica_vehiculos (
-  id INT AUTO_INCREMENT PRIMARY KEY,
+  id SERIAL PRIMARY KEY,
   tipo VARCHAR(50) DEFAULT 'movil',
   chofer VARCHAR(255) NOT NULL,
   telefono VARCHAR(50) DEFAULT NULL,
@@ -73,43 +76,44 @@ CREATE TABLE IF NOT EXISTS logistica_vehiculos (
   combustible DECIMAL(10,2) DEFAULT 0,
   lat DECIMAL(10,8) DEFAULT NULL,
   lng DECIMAL(11,8) DEFAULT NULL,
-  activo TINYINT(1) DEFAULT 1,
+  activo BOOLEAN DEFAULT true,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 6. Traslados
 CREATE TABLE IF NOT EXISTS logistica_traslados (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  elector_id INT NOT NULL,
-  vehiculo_id INT NOT NULL,
-  estado ENUM('pendiente','en_camino','completado','cancelado') DEFAULT 'pendiente',
-  confirmado_por INT DEFAULT NULL,
+  id SERIAL PRIMARY KEY,
+  elector_id INTEGER NOT NULL,
+  vehiculo_id INTEGER NOT NULL,
+  estado VARCHAR(50) DEFAULT 'pendiente',
+  confirmado_por INTEGER DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (elector_id) REFERENCES electores(id) ON DELETE CASCADE,
   FOREIGN KEY (vehiculo_id) REFERENCES logistica_vehiculos(id) ON DELETE CASCADE,
   FOREIGN KEY (confirmado_por) REFERENCES usuarios(id) ON DELETE SET NULL
 );
 
--- 7. Incidencias
+-- 7. Incidencias (incluye barrio_id)
 CREATE TABLE IF NOT EXISTS incidencias (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  veedor_id INT DEFAULT NULL,
+  id SERIAL PRIMARY KEY,
+  veedor_id INTEGER DEFAULT NULL,
   tipo VARCHAR(50) DEFAULT 'incidente',
   descripcion TEXT DEFAULT NULL,
   lat DECIMAL(10,8) DEFAULT NULL,
   lng DECIMAL(11,8) DEFAULT NULL,
   foto_url VARCHAR(255) DEFAULT NULL,
   audio_url VARCHAR(255) DEFAULT NULL,
+  barrio_id INTEGER DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (veedor_id) REFERENCES usuarios(id) ON DELETE SET NULL
 );
 
--- 8. Sync queue (server-side audit)
+-- 8. Sync queue
 CREATE TABLE IF NOT EXISTS sync_log (
-  id INT AUTO_INCREMENT PRIMARY KEY,
+  id SERIAL PRIMARY KEY,
   tabla VARCHAR(50) NOT NULL,
   operacion VARCHAR(20) NOT NULL,
-  payload JSON,
+  payload JSONB,
   device_id VARCHAR(255) DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
