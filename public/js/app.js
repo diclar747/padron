@@ -831,7 +831,23 @@ async function renderElectores(container) {
     </div>
 
     <!-- Mesa summary bar (hidden until mesa is selected) -->
-    <div id="mesaSummary" class="hidden mb-4 bg-slate-900/70 border border-red-900/40 rounded-2xl px-5 py-3 flex flex-wrap items-center gap-4 text-xs"></div>
+    <div id="mesaSummary" class="hidden mb-3 bg-slate-900/70 border border-red-900/40 rounded-2xl px-5 py-3 flex flex-wrap items-center gap-4 text-xs"></div>
+
+    <!-- Sub-buscador dentro de la mesa (hidden until mesa is selected) -->
+    <div id="mesaSubSearch" class="hidden mb-4">
+      <div class="relative">
+        <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="8"/><path stroke-linecap="round" d="M21 21l-4.35-4.35"/>
+        </svg>
+        <input
+          type="text"
+          id="buscarEnMesa"
+          placeholder="Buscar por nombre, CI o N° de orden..."
+          oninput="filtrarMesaLocal()"
+          class="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-100 placeholder-slate-600 outline-none transition-all focus:ring-2 focus:ring-blue-500/20"
+        >
+      </div>
+    </div>
 
     <div id="listaElectores" class="space-y-3">
       <!-- Placeholder inicial -->
@@ -949,6 +965,8 @@ window.filtrarElectores = function(immediate = false) {
     // Nada seleccionado → mostrar placeholder
     if (!q && !barrioId && !mesaIdVal) {
       if (summaryEl) summaryEl.classList.add('hidden');
+      const subSearch = document.getElementById('mesaSubSearch');
+      if (subSearch) subSearch.classList.add('hidden');
       if (listDiv) listDiv.innerHTML = `
         <div class="flex flex-col items-center justify-center py-20 text-slate-600 gap-3 select-none">
           <svg class="w-12 h-12 opacity-30" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
@@ -1001,8 +1019,15 @@ window.filtrarElectores = function(immediate = false) {
             <span class="text-emerald-400">Votaron: <strong>${votaron}</strong> <span class="text-slate-500">(${pct}%)</span></span>
             <span class="text-amber-400">Pendientes: <strong>${pendientes}</strong></span>
           </div>`;
+        // Mostrar sub-buscador y limpiar texto previo
+        const subSearch = document.getElementById('mesaSubSearch');
+        const subInput  = document.getElementById('buscarEnMesa');
+        if (subSearch) subSearch.classList.remove('hidden');
+        if (subInput)  subInput.value = '';
       } else if (summaryEl) {
         summaryEl.classList.add('hidden');
+        const subSearch = document.getElementById('mesaSubSearch');
+        if (subSearch) subSearch.classList.add('hidden');
       }
 
       renderListaElectores(allElectores);
@@ -1027,6 +1052,23 @@ window.filtrarElectores = function(immediate = false) {
   } else {
     filtrarElectoresTimeout = setTimeout(runSearch, 350);
   }
+};
+
+// Filtro local dentro de la mesa ya cargada (sin nueva llamada al servidor)
+window.filtrarMesaLocal = function() {
+  const q = (document.getElementById('buscarEnMesa')?.value || '').trim().toLowerCase();
+  if (!allElectores.length) return;
+
+  const filtered = q
+    ? allElectores.filter(e => {
+        const nombre  = (e.nombre  || '').toLowerCase();
+        const ci      = String(e.ci     || '').toLowerCase();
+        const orden   = String(e.orden  || '').toLowerCase();
+        return nombre.includes(q) || ci.includes(q) || orden === q;
+      })
+    : allElectores;
+
+  renderListaElectores(filtered);
 };
 
 window.editarElector = async function(id) {
