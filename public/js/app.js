@@ -1918,96 +1918,662 @@ async function cargarMarcadores() {
   }
 }
 
-// ===================== LOGISTICA =====================
+// ===================== LOGISTICA / PRESUPUESTO DE CAMPAÑA =====================
+
+// Formato Guaraníes
+function formatGs(n) {
+  const num = parseInt(n) || 0;
+  return 'Gs. ' + num.toLocaleString('es-PY');
+}
+
+// Categorías predefinidas
+const CATEGORIAS_GASTO = [
+  'Combustible','Peaje','Pago de chofer','Flete','Reparación de vehículo',
+  'Alimentación','Agua / Bebidas','Viáticos','Movilización',
+  'Impresiones / Publicidad','Instalación de carpas','Coordinación territorial',
+  'Transporte de veedores','Emergencias','Otros'
+];
+
+const COLOR_MAP = {
+  blue:   { bg: 'bg-blue-950/60',   border: 'border-blue-800/60',   text: 'text-blue-400',   bar: 'bg-blue-500' },
+  green:  { bg: 'bg-emerald-950/60',border: 'border-emerald-800/60',text: 'text-emerald-400',bar: 'bg-emerald-500' },
+  red:    { bg: 'bg-red-950/60',    border: 'border-red-800/60',    text: 'text-red-400',    bar: 'bg-red-500' },
+  amber:  { bg: 'bg-amber-950/60',  border: 'border-amber-800/60',  text: 'text-amber-400',  bar: 'bg-amber-500' },
+  purple: { bg: 'bg-purple-950/60', border: 'border-purple-800/60', text: 'text-purple-400', bar: 'bg-purple-500' },
+  teal:   { bg: 'bg-teal-950/60',   border: 'border-teal-800/60',   text: 'text-teal-400',   bar: 'bg-teal-500' },
+};
+
+let campTab = 'balance'; // balance | gastos | presupuesto | caja
+
 async function renderLogistica(container) {
+  campTab = campTab || 'balance';
   container.innerHTML = `
-    <div class="mb-6">
-      <h2 class="text-2xl font-extrabold text-slate-100 tracking-tight">Logística y Traslados</h2>
-      <p class="text-xs text-slate-400 mt-1">Monitoreo de móviles de apoyo electoral</p>
+    <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h2 class="text-2xl font-extrabold text-slate-100 tracking-tight">Presupuesto de Campaña</h2>
+        <p class="text-xs text-slate-400 mt-1">Control financiero y logístico en tiempo real</p>
+      </div>
     </div>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 animate-pulse">
-      <div class="h-60 bg-slate-900 border border-slate-800 rounded-3xl"></div>
-      <div class="h-60 bg-slate-900 border border-slate-800 rounded-3xl"></div>
+
+    <!-- Tabs -->
+    <div class="flex gap-1.5 mb-6 bg-slate-900/70 border border-slate-800/60 p-1.5 rounded-2xl w-fit flex-wrap">
+      ${[
+        ['balance',     'Balance',     'M3 3h6l2 2h6a2 2 0 012 2v12a2 2 0 01-2 2H3a2 2 0 01-2-2V5a2 2 0 012-2z'],
+        ['gastos',      'Gastos',      'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z'],
+        ['presupuesto', 'Presupuesto', 'M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z'],
+        ['caja',        'Caja',        'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z'],
+      ].map(([id, label, icon]) => `
+        <button onclick="campSetTab('${id}')" id="campTab_${id}"
+          class="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all
+            ${campTab === id ? 'bg-red-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-100'}">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="${icon}"/>
+          </svg>
+          ${label}
+        </button>`).join('')}
+    </div>
+
+    <div id="campContent" class="min-h-[300px]">
+      <div class="flex items-center justify-center py-20">
+        <div class="w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
     </div>
   `;
-  
+
+  await campLoadTab();
+}
+
+window.campSetTab = async function(tab) {
+  campTab = tab;
+  document.querySelectorAll('[id^="campTab_"]').forEach(btn => {
+    const isActive = btn.id === `campTab_${tab}`;
+    btn.className = btn.className
+      .replace(/bg-red-600 text-white shadow-lg|text-slate-400 hover:text-slate-100/g, '')
+      .trim() + (isActive ? ' bg-red-600 text-white shadow-lg' : ' text-slate-400 hover:text-slate-100');
+  });
+  await campLoadTab();
+};
+
+async function campLoadTab() {
+  const content = document.getElementById('campContent');
+  if (!content) return;
+  content.innerHTML = `<div class="flex items-center justify-center py-16"><div class="w-7 h-7 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div></div>`;
   try {
-    const [vehiculos, traslados] = await Promise.all([api.vehiculos(), api.traslados()]);
-    
-    container.innerHTML = `
-      <div class="mb-6">
-        <h2 class="text-2xl font-extrabold text-slate-100 tracking-tight">Logística y Traslados</h2>
-        <p class="text-xs text-slate-400 mt-1 font-light">Monitoreo en tiempo real de móviles e intención de transporte</p>
-      </div>
-
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="bg-slate-900/60 border border-slate-800/80 rounded-3xl p-6 shadow-xl">
-          <h3 class="text-sm font-bold text-slate-200 mb-4 tracking-wider uppercase">Flota de Móviles</h3>
-          <div class="space-y-3">
-            ${vehiculos.length ? textVehicles(vehiculos) : '<p class="text-xs text-slate-500 text-center py-4">No hay vehículos registrados.</p>'}
-          </div>
-        </div>
-
-        <div class="bg-slate-900/60 border border-slate-800/80 rounded-3xl p-6 shadow-xl">
-          <h3 class="text-sm font-bold text-slate-200 mb-4 tracking-wider uppercase">Traslados Coordinados</h3>
-          <div class="space-y-3">
-            ${traslados.length ? textTransfers(traslados) : '<p class="text-xs text-slate-500 text-center py-4">No hay traslados cargados en la base de datos.</p>'}
-          </div>
-        </div>
-      </div>
-    `;
+    if (campTab === 'balance')      await campRenderBalance(content);
+    else if (campTab === 'gastos')  await campRenderGastos(content);
+    else if (campTab === 'presupuesto') await campRenderPresupuesto(content);
+    else if (campTab === 'caja')    await campRenderCaja(content);
   } catch (e) {
-    container.innerHTML = `
-      <div class="bg-rose-950/40 border border-rose-900 rounded-2xl p-6 text-center text-rose-400 text-xs">
-        Fallo de base de datos en sección logística: ${e.message}
-      </div>
-    `;
+    content.innerHTML = `<div class="bg-rose-950/40 border border-rose-800 rounded-2xl p-6 text-rose-400 text-sm text-center">${e.message}</div>`;
   }
 }
 
-function textVehicles(list) {
-  return list.map(v => `
-    <div class="p-4 bg-slate-950 border border-slate-850 rounded-2xl flex items-center justify-between hover:border-slate-800 transition-all duration-200">
-      <div>
-        <h4 class="font-bold text-sm text-slate-100">${v.chofer} <span class="text-[10px] text-slate-500 font-light lowercase">(${v.tipo})</span></h4>
-        <p class="text-[11px] text-slate-400 mt-1">Placa: ${v.placa || '-'} &bull; Tel: ${v.telefono || '-'}</p>
-        
-        <div class="flex items-center gap-1.5 mt-2">
-          <span class="text-[10px] text-slate-500 uppercase">Combustible:</span>
-          <div class="w-20 bg-slate-850 h-2 rounded-full overflow-hidden">
-            <div class="bg-blue-500 h-full rounded-full" style="width: ${v.combustible}%"></div>
+// ─────────────────────── BALANCE ────────────────────────────────
+async function campRenderBalance(container) {
+  const d = await api.camp.balance();
+  const disponible = d.total_presupuesto - d.total_gastado;
+  const pct = d.total_presupuesto > 0 ? Math.min(100, Math.round(d.total_gastado / d.total_presupuesto * 100)) : 0;
+  const pctColor = pct >= 90 ? 'bg-red-500' : pct >= 70 ? 'bg-amber-500' : 'bg-emerald-500';
+  const textPct  = pct >= 90 ? 'text-red-400' : pct >= 70 ? 'text-amber-400' : 'text-emerald-400';
+
+  container.innerHTML = `
+    <!-- KPI Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+      ${[
+        { label: 'Presupuesto Total', val: formatGs(d.total_presupuesto), color: 'text-slate-100',   icon: 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10' },
+        { label: 'Total Gastado',     val: formatGs(d.total_gastado),     color: 'text-red-400',     icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
+        { label: 'Disponible',        val: formatGs(disponible),          color: disponible >= 0 ? 'text-emerald-400' : 'text-red-400', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' },
+        { label: '% Ejecutado',       val: pct + '%',                     color: textPct,            icon: 'M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z' },
+      ].map(k => `
+        <div class="bg-slate-900/70 border border-slate-800/60 rounded-2xl p-4 shadow-sm">
+          <div class="flex items-center gap-2 mb-2">
+            <svg class="w-4 h-4 text-slate-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="${k.icon}"/>
+            </svg>
+            <span class="text-[10px] text-slate-500 uppercase font-bold tracking-wider leading-tight">${k.label}</span>
           </div>
-          <span class="text-[9px] font-bold text-blue-400">${v.combustible}%</span>
-        </div>
-      </div>
-      <span class="px-2 py-0.5 rounded-md text-[9px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800 uppercase tracking-wide">
-        ${v.activo ? 'Activo' : 'Inactivo'}
-      </span>
+          <div class="text-lg font-extrabold ${k.color} leading-none">${k.val}</div>
+        </div>`).join('')}
     </div>
-  `).join('');
+
+    <!-- Barra de ejecución global -->
+    <div class="bg-slate-900/70 border border-slate-800/60 rounded-2xl p-5 mb-6">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-xs font-bold text-slate-300">Ejecución del Presupuesto</span>
+        <span class="text-xs font-extrabold ${textPct}">${pct}%</span>
+      </div>
+      <div class="h-3 bg-slate-800 rounded-full overflow-hidden">
+        <div class="h-full rounded-full transition-all duration-700 ${pctColor}" style="width:${pct}%"></div>
+      </div>
+      <div class="flex justify-between text-[10px] text-slate-600 mt-1.5">
+        <span>Gs. 0</span><span>${formatGs(d.total_presupuesto)}</span>
+      </div>
+    </div>
+
+    <!-- Presupuestos por categoría -->
+    ${d.presupuestos.length ? `
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+      ${d.presupuestos.map(p => {
+        const g = parseInt(p.gastado) || 0;
+        const t = parseInt(p.monto_total) || 0;
+        const pc = t > 0 ? Math.min(100, Math.round(g / t * 100)) : 0;
+        const c = COLOR_MAP[p.color] || COLOR_MAP.blue;
+        const barCol = pc >= 90 ? 'bg-red-500' : pc >= 70 ? 'bg-amber-500' : c.bar;
+        return `
+        <div class="border ${c.border} ${c.bg} rounded-2xl p-4">
+          <div class="flex items-center justify-between mb-1">
+            <span class="font-bold text-sm text-slate-100">${p.nombre}</span>
+            <span class="text-[10px] font-bold ${pc >= 90 ? 'text-red-400' : pc >= 70 ? 'text-amber-400' : c.text}">${pc}%</span>
+          </div>
+          ${p.descripcion ? `<p class="text-[10px] text-slate-500 mb-2">${p.descripcion}</p>` : ''}
+          <div class="h-2 bg-slate-800 rounded-full overflow-hidden mb-2">
+            <div class="h-full rounded-full ${barCol}" style="width:${pc}%"></div>
+          </div>
+          <div class="flex justify-between text-[10px]">
+            <span class="text-red-400">Gastado: <strong>${formatGs(g)}</strong></span>
+            <span class="text-slate-500">/ ${formatGs(t)}</span>
+          </div>
+          <div class="text-[10px] text-emerald-400 mt-0.5">Disponible: <strong>${formatGs(t - g)}</strong></div>
+        </div>`;
+      }).join('')}
+    </div>` : ''}
+
+    <!-- Gastos por categoría -->
+    ${d.categorias.length ? `
+    <div class="bg-slate-900/70 border border-slate-800/60 rounded-2xl p-5 mb-6">
+      <h4 class="text-xs font-bold text-slate-300 uppercase mb-4 tracking-wider">Distribución por Categoría</h4>
+      <div class="space-y-2.5">
+        ${d.categorias.map(c => {
+          const pca = d.total_gastado > 0 ? Math.round(parseInt(c.total) / d.total_gastado * 100) : 0;
+          return `
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs text-slate-300 font-semibold">${c.categoria}</span>
+              <span class="text-xs text-slate-400">${formatGs(c.total)} <span class="text-slate-600">(${pca}%)</span></span>
+            </div>
+            <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+              <div class="h-full bg-red-500 rounded-full" style="width:${pca}%"></div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>` : ''}
+
+    <!-- Últimos gastos -->
+    ${d.recientes.length ? `
+    <div class="bg-slate-900/70 border border-slate-800/60 rounded-2xl p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Últimos Movimientos</h4>
+        <button onclick="campSetTab('gastos')" class="text-[10px] text-red-400 hover:text-red-300 font-semibold">Ver todos →</button>
+      </div>
+      <div class="space-y-2">
+        ${d.recientes.map(g => `
+        <div class="flex items-center justify-between py-2 border-b border-slate-800/50 last:border-0">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-7 h-7 rounded-xl bg-slate-800 flex items-center justify-center shrink-0">
+              <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+            </div>
+            <div class="min-w-0">
+              <p class="text-xs font-semibold text-slate-200 truncate">${g.categoria}</p>
+              <p class="text-[10px] text-slate-500 truncate">${g.responsable_nombre || '-'} · ${g.fecha || ''}</p>
+            </div>
+          </div>
+          <span class="text-xs font-bold text-red-400 shrink-0 ml-2">${formatGs(g.monto)}</span>
+        </div>`).join('')}
+      </div>
+    </div>` : `
+    <div class="text-center py-12 text-slate-600">
+      <svg class="w-10 h-10 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"/></svg>
+      <p class="text-sm font-semibold text-slate-500">Sin movimientos aún</p>
+      <p class="text-xs text-slate-600 mt-1">Cargá el presupuesto y empezá a registrar gastos</p>
+      <button onclick="campSetTab('presupuesto')" class="mt-4 bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-5 py-2 rounded-xl transition-all">
+        Configurar Presupuesto
+      </button>
+    </div>`}
+  `;
 }
 
-function textTransfers(list) {
-  return list.map(t => {
-    let badgeStyle = '';
-    if (t.estado === 'completado') badgeStyle = 'bg-emerald-950 text-emerald-400 border border-emerald-800';
-    else if (t.estado === 'en_camino') badgeStyle = 'bg-amber-950 text-amber-400 border border-amber-800';
-    else badgeStyle = 'bg-blue-950 text-blue-400 border border-blue-800';
+// ─────────────────────── GASTOS ─────────────────────────────────
+async function campRenderGastos(container) {
+  const [gastos, presupuestos] = await Promise.all([api.camp.gastos(), api.camp.presupuestos()]);
 
+  container.innerHTML = `
+    <div class="flex flex-wrap items-center gap-3 mb-5">
+      <button onclick="campAbrirFormGasto()" class="bg-red-600 hover:bg-red-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+        Registrar Gasto
+      </button>
+      <select id="campFiltroPresu" onchange="campFiltrarGastos()" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-300 outline-none">
+        <option value="">Todos los presupuestos</option>
+        ${presupuestos.map(p => `<option value="${p.id}">${p.nombre}</option>`).join('')}
+      </select>
+      <span class="text-xs text-slate-500 ml-auto">${gastos.length} registro${gastos.length !== 1 ? 's' : ''}</span>
+    </div>
+
+    <div id="campListaGastos" class="space-y-2.5">
+      ${campRenderListaGastos(gastos, presupuestos)}
+    </div>
+  `;
+
+  // Guardar en window para filtrar
+  window._campGastos = gastos;
+  window._campPresupuestos = presupuestos;
+}
+
+function campRenderListaGastos(lista, presupuestos) {
+  if (!lista.length) return `
+    <div class="text-center py-16 text-slate-600">
+      <svg class="w-10 h-10 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75"/></svg>
+      <p class="text-sm font-semibold text-slate-500">Sin gastos registrados</p>
+    </div>`;
+
+  return lista.map(g => {
+    const c = COLOR_MAP[g.presupuesto_color] || COLOR_MAP.blue;
     return `
-      <div class="p-4 bg-slate-950 border border-slate-850 rounded-2xl flex items-center justify-between hover:border-slate-800 transition-all duration-200">
-        <div>
-          <h4 class="font-bold text-sm text-slate-100">${t.elector_nombre}</h4>
-          <p class="text-[11px] text-slate-400 mt-1">Dirección: ${t.elector_direccion || '-'}</p>
-          <p class="text-[10px] text-slate-500 mt-0.5">Asignado a: <strong>${t.chofer}</strong> (${t.placa})</p>
+    <div class="bg-slate-900/70 border border-slate-800/60 rounded-2xl p-4 flex flex-wrap items-start gap-3">
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="text-sm font-bold text-slate-100">${g.categoria}</span>
+          ${g.presupuesto_nombre ? `<span class="text-[9px] font-bold px-2 py-0.5 rounded-full border ${c.border} ${c.text} ${c.bg}">${g.presupuesto_nombre}</span>` : ''}
         </div>
-        <span class="px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider ${badgeStyle}">
-          ${t.estado}
-        </span>
+        ${g.descripcion ? `<p class="text-xs text-slate-400 mt-0.5 truncate">${g.descripcion}</p>` : ''}
+        <div class="flex items-center gap-3 mt-1.5 flex-wrap text-[10px] text-slate-500">
+          <span>📅 ${g.fecha || ''}</span>
+          <span>👤 ${g.responsable_nombre || '-'}</span>
+          ${g.lat ? `<span>📍 GPS</span>` : ''}
+          ${g.observaciones ? `<span class="truncate max-w-[160px]">💬 ${g.observaciones}</span>` : ''}
+        </div>
       </div>
-    `;
+      <div class="flex items-center gap-2 shrink-0">
+        <span class="text-base font-extrabold text-red-400">${formatGs(g.monto)}</span>
+        <button onclick="campEliminarGasto(${g.id})" class="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-red-900/50 text-slate-500 hover:text-red-400 transition-colors">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+        </button>
+      </div>
+    </div>`;
   }).join('');
 }
+
+window.campFiltrarGastos = function() {
+  const presuId = document.getElementById('campFiltroPresu')?.value;
+  const lista = presuId
+    ? (window._campGastos || []).filter(g => String(g.presupuesto_id) === presuId)
+    : (window._campGastos || []);
+  const div = document.getElementById('campListaGastos');
+  if (div) div.innerHTML = campRenderListaGastos(lista, window._campPresupuestos || []);
+};
+
+window.campAbrirFormGasto = async function() {
+  let presupuestos = window._campPresupuestos;
+  if (!presupuestos) presupuestos = await api.camp.presupuestos().catch(() => []);
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay fixed inset-0 z-50 flex items-end md:items-center justify-center p-4';
+  modal.innerHTML = `
+    <div class="modal-card bg-slate-900 border border-slate-700 rounded-3xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
+      <h3 class="text-base font-bold text-slate-100 mb-5 flex items-center gap-2">
+        <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        Registrar Gasto
+      </h3>
+      <form id="formCampGasto" class="space-y-4">
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-400 text-[10px] font-bold uppercase mb-1.5">Monto (Gs.)</label>
+            <input name="monto" type="number" min="0" step="1000" required placeholder="500000"
+              class="w-full bg-slate-950 border border-slate-700 focus:border-red-500 rounded-xl px-3 py-2.5 text-sm text-slate-100 outline-none">
+          </div>
+          <div>
+            <label class="block text-slate-400 text-[10px] font-bold uppercase mb-1.5">Fecha</label>
+            <input name="fecha" type="date" value="${new Date().toISOString().split('T')[0]}"
+              class="w-full bg-slate-950 border border-slate-700 focus:border-red-500 rounded-xl px-3 py-2.5 text-sm text-slate-100 outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-slate-400 text-[10px] font-bold uppercase mb-1.5">Categoría</label>
+          <select name="categoria" required class="w-full bg-slate-950 border border-slate-700 focus:border-red-500 rounded-xl px-3 py-2.5 text-sm text-slate-300 outline-none">
+            <option value="">Seleccionar categoría...</option>
+            ${CATEGORIAS_GASTO.map(c => `<option value="${c}">${c}</option>`).join('')}
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-slate-400 text-[10px] font-bold uppercase mb-1.5">Presupuesto Asociado</label>
+          <select name="presupuesto_id" class="w-full bg-slate-950 border border-slate-700 focus:border-red-500 rounded-xl px-3 py-2.5 text-sm text-slate-300 outline-none">
+            <option value="">Sin asignar</option>
+            ${presupuestos.map(p => `<option value="${p.id}">${p.nombre}</option>`).join('')}
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-slate-400 text-[10px] font-bold uppercase mb-1.5">Descripción</label>
+          <input name="descripcion" type="text" placeholder="Ej: Carga de combustible vehículo 3"
+            class="w-full bg-slate-950 border border-slate-700 focus:border-red-500 rounded-xl px-3 py-2.5 text-sm text-slate-100 outline-none">
+        </div>
+
+        <div>
+          <label class="block text-slate-400 text-[10px] font-bold uppercase mb-1.5">Observaciones</label>
+          <textarea name="observaciones" rows="2" placeholder="Notas adicionales..."
+            class="w-full bg-slate-950 border border-slate-700 focus:border-red-500 rounded-xl px-3 py-2 text-sm text-slate-100 outline-none resize-none placeholder-slate-700"></textarea>
+        </div>
+
+        <div class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 flex items-center justify-between text-xs">
+          <div>
+            <p class="font-bold text-slate-400 text-[10px] uppercase">GPS (opcional)</p>
+            <p id="gpsGastoCamp" class="text-[10px] text-slate-600 mt-0.5">No capturado</p>
+          </div>
+          <input type="hidden" name="lat"><input type="hidden" name="lng">
+          <button type="button" onclick="campCapturarGPS()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-semibold px-3 py-1.5 rounded-lg text-[10px] active:scale-95 transition-all">
+            Capturar GPS
+          </button>
+        </div>
+
+        <div class="flex gap-3 pt-1">
+          <button type="button" onclick="this.closest('.modal-overlay').remove()" class="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs transition-all">Cancelar</button>
+          <button type="submit" class="flex-1 py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl text-xs shadow-lg transition-all">Guardar Gasto</button>
+        </div>
+      </form>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+
+  document.getElementById('formCampGasto').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const fd = new FormData(ev.target);
+    const body = Object.fromEntries(fd.entries());
+    if (!body.monto || parseInt(body.monto) <= 0) return showToast('Ingresá un monto válido', 'warning');
+    try {
+      await api.camp.crearGastoCamp(body);
+      showToast('Gasto registrado correctamente.');
+      modal.remove();
+      await campLoadTab();
+    } catch (err) { showToast(err.message, 'error'); }
+  });
+};
+
+window.campCapturarGPS = function() {
+  navigator.geolocation?.getCurrentPosition(pos => {
+    const form = document.getElementById('formCampGasto');
+    if (form) {
+      form.lat.value = pos.coords.latitude.toFixed(6);
+      form.lng.value = pos.coords.longitude.toFixed(6);
+    }
+    const el = document.getElementById('gpsGastoCamp');
+    if (el) el.textContent = `${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`;
+  }, () => showToast('No se pudo obtener la ubicación', 'warning'));
+};
+
+window.campEliminarGasto = async function(id) {
+  const ok = await window.confirmarAccion('Eliminar Gasto', '¿Eliminar este gasto del registro?');
+  if (!ok) return;
+  try {
+    await api.camp.borrarGasto(id);
+    showToast('Gasto eliminado.');
+    await campLoadTab();
+  } catch (e) { showToast(e.message, 'error'); }
+};
+
+// ─────────────────────── PRESUPUESTO ────────────────────────────
+async function campRenderPresupuesto(container) {
+  const presupuestos = await api.camp.presupuestos();
+  const colores = ['blue','green','red','amber','purple','teal'];
+
+  container.innerHTML = `
+    <div class="flex items-center justify-between mb-5">
+      <p class="text-xs text-slate-400">Configurá los rubros del presupuesto de campaña</p>
+      <button onclick="campAbrirFormPresupuesto()" class="bg-red-600 hover:bg-red-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+        Nuevo Rubro
+      </button>
+    </div>
+
+    <div id="campListaPresu" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      ${presupuestos.length ? presupuestos.map(p => {
+        const g = parseInt(p.gastado) || 0;
+        const t = parseInt(p.monto_total) || 0;
+        const pc = t > 0 ? Math.min(100, Math.round(g / t * 100)) : 0;
+        const c = COLOR_MAP[p.color] || COLOR_MAP.blue;
+        return `
+        <div class="border ${c.border} ${c.bg} rounded-2xl p-5 relative group">
+          <div class="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button onclick="campEditarPresupuesto(${p.id},'${p.nombre}',${p.monto_total},'${p.color || 'blue'}','${p.descripcion || ''}')"
+              class="w-7 h-7 bg-slate-800 hover:bg-slate-700 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-100">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/></svg>
+            </button>
+            <button onclick="campBorrarPresupuesto(${p.id})"
+              class="w-7 h-7 bg-slate-800 hover:bg-red-900/50 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-400">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            </button>
+          </div>
+          <div class="flex items-center gap-2 mb-1">
+            <h4 class="font-bold text-slate-100">${p.nombre}</h4>
+          </div>
+          ${p.descripcion ? `<p class="text-[11px] text-slate-500 mb-2">${p.descripcion}</p>` : ''}
+          <div class="text-lg font-extrabold ${c.text} mb-1">${formatGs(p.monto_total)}</div>
+          <div class="h-2 bg-slate-800 rounded-full overflow-hidden mb-1.5">
+            <div class="h-full rounded-full ${pc>=90?'bg-red-500':pc>=70?'bg-amber-500':c.bar}" style="width:${pc}%"></div>
+          </div>
+          <div class="flex justify-between text-[10px]">
+            <span class="text-red-400">Gastado: <strong>${formatGs(g)}</strong></span>
+            <span class="text-emerald-400">Libre: <strong>${formatGs(t-g)}</strong></span>
+          </div>
+        </div>`;
+      }).join('') : `
+      <div class="col-span-2 text-center py-16 text-slate-600">
+        <svg class="w-10 h-10 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+        <p class="text-sm font-semibold text-slate-500">No hay rubros cargados</p>
+        <p class="text-xs text-slate-600 mt-1">Hacé clic en "Nuevo Rubro" para empezar</p>
+      </div>`}
+    </div>
+  `;
+}
+
+window.campAbrirFormPresupuesto = function(id = null, nombre = '', monto = '', color = 'blue', descripcion = '') {
+  const colores = ['blue','green','red','amber','purple','teal'];
+  const esEdicion = !!id;
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay fixed inset-0 z-50 flex items-end md:items-center justify-center p-4';
+  modal.innerHTML = `
+    <div class="modal-card bg-slate-900 border border-slate-700 rounded-3xl p-6 w-full max-w-sm shadow-2xl">
+      <h3 class="text-base font-bold text-slate-100 mb-5">${esEdicion ? 'Editar Rubro' : 'Nuevo Rubro de Presupuesto'}</h3>
+      <form id="formCampPresu" class="space-y-4">
+        ${id ? `<input type="hidden" name="id" value="${id}">` : ''}
+        <div>
+          <label class="block text-slate-400 text-[10px] font-bold uppercase mb-1.5">Nombre del Rubro</label>
+          <input name="nombre" value="${nombre}" required placeholder="Ej: Combustible"
+            class="w-full bg-slate-950 border border-slate-700 focus:border-red-500 rounded-xl px-3 py-2.5 text-sm text-slate-100 outline-none">
+        </div>
+        <div>
+          <label class="block text-slate-400 text-[10px] font-bold uppercase mb-1.5">Monto Asignado (Gs.)</label>
+          <input name="monto_total" value="${monto}" type="number" min="0" step="100000" required placeholder="20000000"
+            class="w-full bg-slate-950 border border-slate-700 focus:border-red-500 rounded-xl px-3 py-2.5 text-sm text-slate-100 outline-none">
+        </div>
+        <div>
+          <label class="block text-slate-400 text-[10px] font-bold uppercase mb-1.5">Descripción (opcional)</label>
+          <input name="descripcion" value="${descripcion}" placeholder="Descripción breve..."
+            class="w-full bg-slate-950 border border-slate-700 focus:border-red-500 rounded-xl px-3 py-2.5 text-sm text-slate-100 outline-none">
+        </div>
+        <div>
+          <label class="block text-slate-400 text-[10px] font-bold uppercase mb-1.5">Color</label>
+          <div class="flex gap-2 flex-wrap">
+            ${colores.map(col => {
+              const c = COLOR_MAP[col];
+              return `<label class="cursor-pointer">
+                <input type="radio" name="color" value="${col}" ${col===color?'checked':''} class="sr-only">
+                <div class="w-8 h-8 rounded-xl border-2 ${c.bar.replace('bg-','border-')} ${c.bg} transition-all peer-checked:scale-110" style="outline:${col===color?'2px solid white':'none'};outline-offset:2px"
+                  onclick="this.parentElement.querySelector('input').checked=true; document.querySelectorAll('#formCampPresu .color-dot').forEach(d=>d.style.outline='none'); this.style.outline='2px solid white';"
+                  class="color-dot w-8 h-8 rounded-xl ${c.bg} border-2 ${c.border}"
+                  ${col===color?'style="outline:2px solid white;outline-offset:2px"':''}></div>
+              </label>`;
+            }).join('')}
+          </div>
+        </div>
+        <div class="flex gap-3 pt-1">
+          <button type="button" onclick="this.closest('.modal-overlay').remove()" class="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs transition-all">Cancelar</button>
+          <button type="submit" class="flex-1 py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl text-xs shadow-lg transition-all">${esEdicion ? 'Guardar' : 'Crear Rubro'}</button>
+        </div>
+      </form>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+
+  document.getElementById('formCampPresu').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const fd = new FormData(ev.target);
+    const body = Object.fromEntries(fd.entries());
+    try {
+      if (esEdicion) {
+        await api.camp.editarPresupuesto(id, body);
+        showToast('Rubro actualizado.');
+      } else {
+        await api.camp.crearPresupuesto(body);
+        showToast('Rubro creado correctamente.');
+      }
+      modal.remove();
+      await campLoadTab();
+    } catch (err) { showToast(err.message, 'error'); }
+  });
+};
+
+window.campEditarPresupuesto = function(id, nombre, monto, color, descripcion) {
+  campAbrirFormPresupuesto(id, nombre, monto, color, descripcion);
+};
+
+window.campBorrarPresupuesto = async function(id) {
+  const ok = await window.confirmarAccion('Eliminar Rubro', '¿Eliminar este rubro de presupuesto? Los gastos asociados quedarán sin asignar.');
+  if (!ok) return;
+  try {
+    await api.camp.borrarPresupuesto(id);
+    showToast('Rubro eliminado.');
+    await campLoadTab();
+  } catch (e) { showToast(e.message, 'error'); }
+};
+
+// ─────────────────────── CAJA ────────────────────────────────────
+async function campRenderCaja(container) {
+  const movimientos = await api.camp.caja();
+  const ingresos  = movimientos.filter(m => m.tipo === 'ingreso')   .reduce((s, m) => s + parseInt(m.monto), 0);
+  const egresos   = movimientos.filter(m => ['egreso','entrega'].includes(m.tipo)).reduce((s, m) => s + parseInt(m.monto), 0);
+  const saldo     = ingresos - egresos;
+
+  const TIPOS_CAJA = ['ingreso','egreso','entrega','rendicion'];
+  const tipoLabel = { ingreso: '💰 Ingreso', egreso: '💸 Egreso', entrega: '🤝 Entrega', rendicion: '📋 Rendición' };
+  const tipoBadge = {
+    ingreso:   'bg-emerald-950/60 text-emerald-400 border border-emerald-800/60',
+    egreso:    'bg-red-950/60 text-red-400 border border-red-800/60',
+    entrega:   'bg-amber-950/60 text-amber-400 border border-amber-800/60',
+    rendicion: 'bg-blue-950/60 text-blue-400 border border-blue-800/60',
+  };
+
+  container.innerHTML = `
+    <!-- KPIs Caja -->
+    <div class="grid grid-cols-3 gap-3 mb-5">
+      <div class="bg-emerald-950/40 border border-emerald-800/50 rounded-2xl p-4 text-center">
+        <p class="text-[10px] text-emerald-500 uppercase font-bold mb-1">Ingresos</p>
+        <p class="text-base font-extrabold text-emerald-400">${formatGs(ingresos)}</p>
+      </div>
+      <div class="bg-red-950/40 border border-red-800/50 rounded-2xl p-4 text-center">
+        <p class="text-[10px] text-red-500 uppercase font-bold mb-1">Egresos</p>
+        <p class="text-base font-extrabold text-red-400">${formatGs(egresos)}</p>
+      </div>
+      <div class="bg-slate-900/70 border ${saldo >= 0 ? 'border-emerald-800/40' : 'border-red-800/40'} rounded-2xl p-4 text-center">
+        <p class="text-[10px] text-slate-500 uppercase font-bold mb-1">Saldo</p>
+        <p class="text-base font-extrabold ${saldo >= 0 ? 'text-emerald-400' : 'text-red-400'}">${formatGs(saldo)}</p>
+      </div>
+    </div>
+
+    <div class="flex items-center justify-between mb-4">
+      <p class="text-xs text-slate-500">${movimientos.length} movimiento${movimientos.length !== 1 ? 's' : ''}</p>
+      <button onclick="campAbrirFormCaja()" class="bg-red-600 hover:bg-red-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+        Nuevo Movimiento
+      </button>
+    </div>
+
+    <div class="space-y-2.5">
+      ${movimientos.length ? movimientos.map(m => `
+        <div class="bg-slate-900/70 border border-slate-800/60 rounded-2xl p-4 flex flex-wrap items-center gap-3">
+          <span class="text-[10px] font-bold px-2.5 py-1 rounded-full ${tipoBadge[m.tipo] || tipoBadge.egreso}">${tipoLabel[m.tipo] || m.tipo}</span>
+          <div class="flex-1 min-w-0">
+            <p class="text-xs font-semibold text-slate-200 truncate">${m.descripcion || '-'}</p>
+            <div class="text-[10px] text-slate-500 mt-0.5 flex gap-3 flex-wrap">
+              <span>👤 ${m.responsable_nombre || '-'}</span>
+              ${m.destinatario_nombre ? `<span>→ ${m.destinatario_nombre}</span>` : ''}
+              <span>📅 ${m.fecha ? new Date(m.fecha).toLocaleString('es-PY', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '-'}</span>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <span class="font-extrabold text-sm ${['ingreso'].includes(m.tipo) ? 'text-emerald-400' : 'text-red-400'}">${formatGs(m.monto)}</span>
+          </div>
+        </div>`).join('') : `
+        <div class="text-center py-14 text-slate-600">
+          <svg class="w-10 h-10 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"/></svg>
+          <p class="text-sm font-semibold text-slate-500">Sin movimientos de caja</p>
+        </div>`}
+    </div>
+  `;
+}
+
+window.campAbrirFormCaja = function() {
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay fixed inset-0 z-50 flex items-end md:items-center justify-center p-4';
+  modal.innerHTML = `
+    <div class="modal-card bg-slate-900 border border-slate-700 rounded-3xl p-6 w-full max-w-sm shadow-2xl">
+      <h3 class="text-base font-bold text-slate-100 mb-5">Nuevo Movimiento de Caja</h3>
+      <form id="formCampCaja" class="space-y-4">
+        <div>
+          <label class="block text-slate-400 text-[10px] font-bold uppercase mb-1.5">Tipo</label>
+          <select name="tipo" required class="w-full bg-slate-950 border border-slate-700 focus:border-red-500 rounded-xl px-3 py-2.5 text-sm text-slate-300 outline-none">
+            <option value="ingreso">💰 Ingreso (fondos recibidos)</option>
+            <option value="egreso">💸 Egreso (gasto directo)</option>
+            <option value="entrega">🤝 Entrega (fondos a persona)</option>
+            <option value="rendicion">📋 Rendición (devolución/cierre)</option>
+          </select>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-400 text-[10px] font-bold uppercase mb-1.5">Monto (Gs.)</label>
+            <input name="monto" type="number" min="0" step="1000" required placeholder="500000"
+              class="w-full bg-slate-950 border border-slate-700 focus:border-red-500 rounded-xl px-3 py-2.5 text-sm text-slate-100 outline-none">
+          </div>
+          <div>
+            <label class="block text-slate-400 text-[10px] font-bold uppercase mb-1.5">Destinatario</label>
+            <input name="destinatario_nombre" type="text" placeholder="Nombre persona"
+              class="w-full bg-slate-950 border border-slate-700 focus:border-red-500 rounded-xl px-3 py-2.5 text-sm text-slate-100 outline-none">
+          </div>
+        </div>
+        <div>
+          <label class="block text-slate-400 text-[10px] font-bold uppercase mb-1.5">Descripción</label>
+          <input name="descripcion" type="text" placeholder="Ej: Entrega a Juan para combustible zona norte"
+            class="w-full bg-slate-950 border border-slate-700 focus:border-red-500 rounded-xl px-3 py-2.5 text-sm text-slate-100 outline-none">
+        </div>
+        <div>
+          <label class="block text-slate-400 text-[10px] font-bold uppercase mb-1.5">Observaciones</label>
+          <textarea name="observaciones" rows="2" placeholder="Notas adicionales..."
+            class="w-full bg-slate-950 border border-slate-700 focus:border-red-500 rounded-xl px-3 py-2 text-sm text-slate-100 outline-none resize-none placeholder-slate-700"></textarea>
+        </div>
+        <div class="flex gap-3 pt-1">
+          <button type="button" onclick="this.closest('.modal-overlay').remove()" class="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs transition-all">Cancelar</button>
+          <button type="submit" class="flex-1 py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl text-xs shadow-lg transition-all">Guardar</button>
+        </div>
+      </form>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+
+  document.getElementById('formCampCaja').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const body = Object.fromEntries(new FormData(ev.target).entries());
+    if (!body.monto || parseInt(body.monto) <= 0) return showToast('Ingresá un monto válido', 'warning');
+    try {
+      await api.camp.crearMovCaja(body);
+      showToast('Movimiento registrado.');
+      modal.remove();
+      await campLoadTab();
+    } catch (err) { showToast(err.message, 'error'); }
+  });
+};
 
 // ===================== EMERGENCIA =====================
 async function renderEmergencia(container) {
