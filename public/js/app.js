@@ -2016,6 +2016,228 @@ async function campLoadTab() {
   }
 }
 
+// ═══════════════════════════════════════════════════════════════
+// UTILIDADES GENÉRICAS: PDF e IMPRESIÓN para sección Logística
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * campExportarPDF({ titulo, subtitulo, columnas, filas, resumen, filename, landscape })
+ * columnas: [{ label, key, w, align:'l'|'r'|'c', fmt: fn }]
+ */
+window.campExportarPDF = function({ titulo, subtitulo = '', columnas, filas, resumen = [], filename = 'reporte', landscape = false }) {
+  if (!filas.length) { showToast('No hay datos para exportar', 'warning'); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: landscape ? 'landscape' : 'portrait', unit: 'mm', format: 'a4' });
+  const PW = landscape ? 297 : 210;
+  const margin = 14;
+  const usable = PW - margin * 2;
+
+  // ── Header ──
+  doc.setFillColor(30, 41, 59);
+  doc.rect(0, 0, PW, 20, 'F');
+  doc.setFillColor(185, 28, 28);
+  doc.rect(0, 20, PW, 3, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(12); doc.setFont('helvetica', 'bold');
+  doc.text('PADRÓN ELECTORAL  ·  A.N.R.', margin, 8);
+  doc.setFontSize(8.5); doc.setFont('helvetica', 'normal');
+  doc.text(titulo, margin, 14);
+  doc.setFontSize(7.5);
+  doc.text(`Generado: ${new Date().toLocaleString('es-PY')}`, PW - margin, 14, { align: 'right' });
+
+  let y = 27;
+
+  // ── Subtítulo / filtros activos ──
+  if (subtitulo) {
+    doc.setFontSize(7.5); doc.setTextColor(100, 116, 139); doc.setFont('helvetica', 'normal');
+    doc.text(subtitulo, margin, y); y += 5;
+  }
+
+  // ── Resumen estadístico ──
+  if (resumen.length) {
+    doc.setFillColor(241, 245, 249);
+    doc.rect(margin, y, usable, 10, 'F');
+    doc.setDrawColor(203, 213, 225); doc.rect(margin, y, usable, 10);
+    const step = usable / resumen.length;
+    resumen.forEach((r, i) => {
+      doc.setFontSize(7.5); doc.setFont('helvetica', 'bold');
+      doc.setTextColor(r.color ? r.color[0] : 30, r.color ? r.color[1] : 41, r.color ? r.color[2] : 59);
+      doc.text(`${r.label}: ${r.valor}`, margin + step * i + 2, y + 6.5);
+    });
+    y += 14;
+  }
+
+  // ── Cabecera de tabla ──
+  const drawHeader = (yPos) => {
+    doc.setFillColor(30, 41, 59);
+    doc.rect(margin, yPos, usable, 7, 'F');
+    doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(7);
+    let x = margin + 1;
+    columnas.forEach(col => {
+      doc.text(col.label, col.align === 'r' ? x + col.w - 1 : x + 1, yPos + 5, { align: col.align === 'r' ? 'right' : 'left' });
+      x += col.w;
+    });
+    return yPos + 7;
+  };
+  y = drawHeader(y);
+
+  // ── Filas ──
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(7);
+  const PH = landscape ? 210 : 297;
+  filas.forEach((fila, idx) => {
+    if (y > PH - 15) {
+      doc.addPage();
+      doc.setFillColor(30, 41, 59);
+      doc.rect(0, 0, PW, 7, 'F');
+      doc.setTextColor(255,255,255); doc.setFontSize(7); doc.setFont('helvetica','bold');
+      doc.text(`${titulo} (continuación)`, margin, 5);
+      y = 12; y = drawHeader(y);
+      doc.setFont('helvetica','normal'); doc.setFontSize(7);
+    }
+    if (idx % 2 === 0) { doc.setFillColor(248, 250, 252); doc.rect(margin, y, usable, 6, 'F'); }
+    let x = margin + 1;
+    columnas.forEach(col => {
+      const raw = typeof col.key === 'function' ? col.key(fila) : (fila[col.key] ?? '-');
+      const val = col.fmt ? col.fmt(raw, fila) : String(raw);
+      const maxLen = Math.floor(col.w / 1.8);
+      const text = val.length > maxLen ? val.substring(0, maxLen - 2) + '..' : val;
+      if (col.color) { const c = col.color(fila); doc.setTextColor(c[0], c[1], c[2]); }
+      else doc.setTextColor(30, 41, 59);
+      doc.text(text, col.align === 'r' ? x + col.w - 1 : x + 1, y + 4.2, { align: col.align === 'r' ? 'right' : 'left' });
+      x += col.w;
+    });
+    y += 6;
+  });
+
+  // ── Fila total (si hay columna numérica) ──
+  const totalCol = columnas.find(c => c.total);
+  if (totalCol) {
+    const sum = filas.reduce((s, f) => s + (parseInt(typeof totalCol.key === 'function' ? totalCol.key(f) : f[totalCol.key]) || 0), 0);
+    doc.setFillColor(30, 41, 59); doc.rect(margin, y, usable, 7, 'F');
+    doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(7.5);
+    doc.text('TOTAL', margin + 2, y + 5);
+    let x = margin + 1;
+    columnas.forEach(col => {
+      if (col.total) doc.text(formatGs(sum), x + col.w - 1, y + 5, { align: 'right' });
+      x += col.w;
+    });
+    y += 7;
+  }
+
+  // ── Pie de página ──
+  const pages = doc.getNumberOfPages();
+  for (let i = 1; i <= pages; i++) {
+    doc.setPage(i);
+    doc.setFontSize(7); doc.setTextColor(148, 163, 184); doc.setFont('helvetica','normal');
+    doc.text(`Pág ${i}/${pages}  ·  Padrón Electoral A.N.R.`, margin, landscape ? 207 : 292);
+    doc.text(new Date().toLocaleDateString('es-PY'), PW - margin, landscape ? 207 : 292, { align: 'right' });
+  }
+
+  doc.save(`ANR_${filename}_${new Date().toLocaleDateString('es-PY').replace(/\//g,'-')}.pdf`);
+  showToast(`📄 PDF exportado (${filas.length} registros).`);
+};
+
+/**
+ * campImprimirLog({ titulo, columnas, filas, resumen })
+ * Abre ventana del navegador con tabla estilizada e imprime.
+ */
+window.campImprimirLog = function({ titulo, columnas, filas, resumen = [] }) {
+  if (!filas.length) { showToast('No hay datos para imprimir', 'warning'); return; }
+  const cabecera = columnas.map(c => `<th style="padding:4px 6px;background:#1e293b;color:#fff;font-size:.7em;text-align:${c.align==='r'?'right':'left'}">${c.label}</th>`).join('');
+  const rowsHTML = filas.map((f, i) => {
+    const celdas = columnas.map(c => {
+      const raw = typeof c.key === 'function' ? c.key(f) : (f[c.key] ?? '-');
+      const val = c.fmt ? c.fmt(raw, f) : String(raw);
+      const style = c.align === 'r' ? 'text-align:right;font-weight:bold' : '';
+      return `<td style="padding:3px 6px;font-size:.72em;${style}">${val}</td>`;
+    }).join('');
+    return `<tr style="${i%2===0?'background:#f9fafb':''}">${celdas}</tr>`;
+  }).join('');
+
+  const totalCol = columnas.find(c => c.total);
+  const totalRow = totalCol ? (() => {
+    const sum = filas.reduce((s, f) => s + (parseInt(typeof totalCol.key === 'function' ? totalCol.key(f) : f[totalCol.key]) || 0), 0);
+    const celdas = columnas.map(c => c.total
+      ? `<td style="text-align:right;font-size:.72em;font-weight:900;color:#b91c1c">${formatGs(sum)}</td>`
+      : `<td style="font-size:.72em;font-weight:900;background:#1e293b;color:#fff">${c === columnas[0] ? 'TOTAL' : ''}</td>`).join('');
+    return `<tr style="background:#f0f9ff">${celdas}</tr>`;
+  })() : '';
+
+  const resumenHTML = resumen.map(r => `<span style="margin-right:20px;font-size:.8em"><strong>${r.label}:</strong> ${r.valor}</span>`).join('');
+
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${titulo} — ANR</title>
+  <style>body{font-family:Arial,sans-serif;margin:0;padding:16px}table{width:100%;border-collapse:collapse}td,th{border-bottom:1px solid #f1f5f9}@media print{.no-print{display:none}}</style>
+  </head><body>
+  <div style="background:#1e293b;color:#fff;padding:10px 14px;border-radius:8px 8px 0 0">
+    <strong style="font-size:1em">PADRÓN ELECTORAL · A.N.R.</strong>
+    <div style="font-size:.82em;opacity:.8;margin-top:2px">${titulo}</div>
+  </div>
+  <div style="background:#b91c1c;height:3px"></div>
+  <div style="background:#f8fafc;border:1px solid #e2e8f0;padding:8px 14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    ${resumenHTML}
+    <span style="margin-left:auto;font-size:.75em;color:#64748b">Generado: ${new Date().toLocaleString('es-PY')}</span>
+    <button class="no-print" onclick="window.print()" style="background:#1e293b;color:#fff;border:none;padding:5px 14px;border-radius:6px;cursor:pointer;font-weight:bold">🖨️ Imprimir</button>
+  </div>
+  <table><thead><tr>${cabecera}</tr></thead><tbody>${rowsHTML}${totalRow}</tbody></table>
+  <div style="text-align:center;font-size:.68em;color:#94a3b8;margin-top:10px">Padrón Electoral A.N.R. · ${new Date().toLocaleDateString('es-PY')}</div>
+  <script>setTimeout(()=>window.print(),400)</script>
+  </body></html>`);
+  win.document.close();
+};
+
+/** Barra de herramientas compartida para los tabs de logística */
+function campToolbarHTML({ searchId, filtros = [], newBtn, exportFn, printFn, count, countLabel = 'registro' }) {
+  return `
+  <div class="bg-slate-900/60 border border-slate-800/60 rounded-2xl p-3 mb-4 flex flex-wrap gap-2 items-end">
+    <div class="relative flex-1 min-w-[160px]">
+      <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path stroke-linecap="round" d="M21 21l-4.35-4.35"/></svg>
+      <input type="text" id="${searchId}" placeholder="Buscar..." oninput="${exportFn.replace('exportar','filtrar')}()"
+        class="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-100 placeholder-slate-600 outline-none transition-all">
+    </div>
+    ${filtros.map(f => `
+      <select id="${f.id}" onchange="${exportFn.replace('exportar','filtrar')}()"
+        class="bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-300 outline-none min-w-[130px]">
+        <option value="">${f.placeholder}</option>
+        ${f.opciones.map(o => `<option value="${o.val}">${o.label}</option>`).join('')}
+      </select>`).join('')}
+    <span class="text-[10px] text-slate-500 self-center ml-1" id="${searchId}Count">${count} ${countLabel}${count !== 1 ? 's' : ''}</span>
+    <div class="flex gap-2 ml-auto">
+      ${newBtn ? `<button onclick="${newBtn}" class="bg-red-600 hover:bg-red-500 text-white font-bold px-3.5 py-2 rounded-xl text-xs shadow transition-all active:scale-95 flex items-center gap-1.5"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>Nuevo</button>` : ''}
+      <div class="relative" id="${searchId}ExportWrap">
+        <button onclick="campToggleExport('${searchId}')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 transition-all">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+          Exportar
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/></svg>
+        </button>
+        <div id="${searchId}ExportDd" class="hidden absolute right-0 top-full mt-1 w-44 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 py-1">
+          <button onclick="${exportFn}('pdf');campToggleExport('${searchId}',false)" class="w-full text-left px-4 py-2.5 text-xs font-semibold text-slate-200 hover:bg-slate-800 flex items-center gap-2">
+            <svg class="w-3.5 h-3.5 text-red-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
+            Exportar PDF
+          </button>
+          <button onclick="${printFn}();campToggleExport('${searchId}',false)" class="w-full text-left px-4 py-2.5 text-xs font-semibold text-slate-300 hover:bg-slate-800 flex items-center gap-2">
+            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0021 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 00-1.913-.247M6.34 18H5.25A2.25 2.25 0 013 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 011.913-.247m10.5 0a48.536 48.536 0 00-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.659M18 10.5h.008v.008H18V10.5zm-3 0h.008v.008H15V10.5z"/></svg>
+            Imprimir Lista
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+window.campToggleExport = function(id, force) {
+  const dd = document.getElementById(id + 'ExportDd');
+  if (!dd) return;
+  if (force === false) { dd.classList.add('hidden'); return; }
+  dd.classList.toggle('hidden');
+};
+document.addEventListener('click', ev => {
+  document.querySelectorAll('[id$="ExportDd"]').forEach(dd => {
+    const wrap = dd.closest('[id$="ExportWrap"]');
+    if (wrap && !wrap.contains(ev.target)) dd.classList.add('hidden');
+  });
+});
+
 // ─────────────────────── BALANCE ────────────────────────────────
 async function campRenderBalance(container) {
   const d = await api.camp.balance();
@@ -2144,37 +2366,50 @@ async function campRenderBalance(container) {
 // ─────────────────────── GASTOS ─────────────────────────────────
 async function campRenderGastos(container) {
   const [gastos, presupuestos] = await Promise.all([api.camp.gastos(), api.camp.presupuestos()]);
-
-  container.innerHTML = `
-    <div class="flex flex-wrap items-center gap-3 mb-5">
-      <button onclick="campAbrirFormGasto()" class="bg-red-600 hover:bg-red-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-        Registrar Gasto
-      </button>
-      <select id="campFiltroPresu" onchange="campFiltrarGastos()" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-300 outline-none">
-        <option value="">Todos los presupuestos</option>
-        ${presupuestos.map(p => `<option value="${p.id}">${p.nombre}</option>`).join('')}
-      </select>
-      <span class="text-xs text-slate-500 ml-auto">${gastos.length} registro${gastos.length !== 1 ? 's' : ''}</span>
-    </div>
-
-    <div id="campListaGastos" class="space-y-2.5">
-      ${campRenderListaGastos(gastos, presupuestos)}
-    </div>
-  `;
-
-  // Guardar en window para filtrar
   window._campGastos = gastos;
   window._campPresupuestos = presupuestos;
+  const cats = [...new Set(gastos.map(g => g.categoria).filter(Boolean))].sort();
+
+  container.innerHTML =
+    campToolbarHTML({
+      searchId: 'gastoBuscar',
+      filtros: [
+        { id: 'gastoFiltroPresu', placeholder: 'Todos los rubros', opciones: presupuestos.map(p => ({ val: p.id, label: p.nombre })) },
+        { id: 'gastoFiltroCateg', placeholder: 'Todas las categorías', opciones: cats.map(c => ({ val: c, label: c })) },
+        { id: 'gastoFiltroFechaD', placeholder: 'Desde', opciones: [] },
+        { id: 'gastoFiltroFechaH', placeholder: 'Hasta', opciones: [] },
+      ],
+      newBtn: 'campAbrirFormGasto()',
+      exportFn: 'campExportarGastos',
+      printFn: 'campImprimirGastos()',
+      count: gastos.length,
+      countLabel: 'gasto',
+    }).replace(
+      `id="gastoFiltroFechaD" onchange="campFiltrarGastos()"
+        class="bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-300 outline-none min-w-[130px]">
+        <option value="">Desde</option>
+        </select>`,
+      `id="gastoFiltroFechaD" onchange="campFiltrarGastos()" type="date" placeholder="Desde"
+        class="bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-300 outline-none" style="color-scheme:dark">`
+    ) + `
+    <div id="campListaGastos" class="space-y-2.5">
+      ${campRenderListaGastos(gastos, presupuestos)}
+    </div>`;
+
+  // Reemplazar los selects de fecha por inputs date
+  container.querySelectorAll('#gastoFiltroFechaD, #gastoFiltroFechaH').forEach((el, i) => {
+    const inp = document.createElement('input');
+    inp.type = 'date'; inp.id = i === 0 ? 'gastoFiltroFechaD' : 'gastoFiltroFechaH';
+    inp.className = 'bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-300 outline-none';
+    inp.style.colorScheme = 'dark';
+    inp.addEventListener('input', window.campFiltrarGastos);
+    el.replaceWith(inp);
+  });
 }
 
 function campRenderListaGastos(lista, presupuestos) {
-  if (!lista.length) return `
-    <div class="text-center py-16 text-slate-600">
-      <svg class="w-10 h-10 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75"/></svg>
-      <p class="text-sm font-semibold text-slate-500">Sin gastos registrados</p>
-    </div>`;
-
+  if (!lista.length) return `<div class="text-center py-16 text-slate-600"><p class="text-sm font-semibold text-slate-500">Sin gastos para mostrar</p></div>`;
+  const total = lista.reduce((s, g) => s + parseInt(g.monto || 0), 0);
   return lista.map(g => {
     const c = COLOR_MAP[g.presupuesto_color] || COLOR_MAP.blue;
     return `
@@ -2188,8 +2423,8 @@ function campRenderListaGastos(lista, presupuestos) {
         <div class="flex items-center gap-3 mt-1.5 flex-wrap text-[10px] text-slate-500">
           <span>📅 ${g.fecha || ''}</span>
           <span>👤 ${g.responsable_nombre || '-'}</span>
-          ${g.lat ? `<span>📍 GPS</span>` : ''}
-          ${g.observaciones ? `<span class="truncate max-w-[160px]">💬 ${g.observaciones}</span>` : ''}
+          ${g.lat ? '<span>📍 GPS</span>' : ''}
+          ${g.observaciones ? `<span class="truncate max-w-[180px]">💬 ${g.observaciones}</span>` : ''}
         </div>
       </div>
       <div class="flex items-center gap-2 shrink-0">
@@ -2199,16 +2434,74 @@ function campRenderListaGastos(lista, presupuestos) {
         </button>
       </div>
     </div>`;
-  }).join('');
+  }).join('') + `
+  <div class="bg-slate-900 border border-slate-700 rounded-xl px-5 py-3 flex justify-between items-center mt-1">
+    <span class="text-xs font-bold text-slate-400 uppercase">Total (${lista.length} registros)</span>
+    <span class="text-base font-extrabold text-red-400">${formatGs(total)}</span>
+  </div>`;
+}
+
+function campGetFiltradoGastos() {
+  const q    = (document.getElementById('gastoBuscar')?.value || '').toLowerCase();
+  const prId = document.getElementById('gastoFiltroPresu')?.value || '';
+  const cat  = document.getElementById('gastoFiltroCateg')?.value || '';
+  const dsd  = document.getElementById('gastoFiltroFechaD')?.value || '';
+  const hst  = document.getElementById('gastoFiltroFechaH')?.value || '';
+  return (window._campGastos || []).filter(g => {
+    if (q && !`${g.categoria} ${g.descripcion||''} ${g.responsable_nombre||''} ${g.observaciones||''}`.toLowerCase().includes(q)) return false;
+    if (prId && String(g.presupuesto_id) !== prId) return false;
+    if (cat && g.categoria !== cat) return false;
+    if (dsd && g.fecha < dsd) return false;
+    if (hst && g.fecha > hst) return false;
+    return true;
+  });
 }
 
 window.campFiltrarGastos = function() {
-  const presuId = document.getElementById('campFiltroPresu')?.value;
-  const lista = presuId
-    ? (window._campGastos || []).filter(g => String(g.presupuesto_id) === presuId)
-    : (window._campGastos || []);
+  const lista = campGetFiltradoGastos();
   const div = document.getElementById('campListaGastos');
+  const cnt = document.getElementById('gastoBuscarCount');
   if (div) div.innerHTML = campRenderListaGastos(lista, window._campPresupuestos || []);
+  if (cnt) cnt.textContent = `${lista.length} gasto${lista.length !== 1 ? 's' : ''}`;
+};
+
+const _gastoCols = [
+  { label: 'Fecha',       key: 'fecha',              w: 22 },
+  { label: 'Categoría',   key: 'categoria',           w: 38 },
+  { label: 'Rubro',       key: 'presupuesto_nombre',  w: 36 },
+  { label: 'Descripción', key: 'descripcion',         w: 50 },
+  { label: 'Responsable', key: 'responsable_nombre',  w: 36 },
+  { label: 'Monto (Gs.)', key: 'monto', w: 30, align: 'r', total: true, fmt: (v) => formatGs(v), color: () => [185, 28, 28] },
+];
+
+window.campExportarGastos = function(tipo) {
+  const lista = campGetFiltradoGastos();
+  const total = lista.reduce((s, g) => s + parseInt(g.monto||0), 0);
+  const subtitulo = `Filtros aplicados · ${lista.length} registros`;
+  const cfg = {
+    titulo: 'REGISTRO DE GASTOS DE CAMPAÑA',
+    subtitulo,
+    columnas: _gastoCols,
+    filas: lista,
+    resumen: [
+      { label: 'Total registros', valor: lista.length },
+      { label: 'Total Gastado',   valor: formatGs(total), color: [185, 28, 28] },
+    ],
+    filename: 'Gastos_Campaña',
+    landscape: true,
+  };
+  if (tipo === 'pdf') campExportarPDF(cfg);
+};
+
+window.campImprimirGastos = function() {
+  const lista = campGetFiltradoGastos();
+  const total = lista.reduce((s, g) => s + parseInt(g.monto||0), 0);
+  campImprimirLog({
+    titulo: 'REGISTRO DE GASTOS DE CAMPAÑA',
+    columnas: _gastoCols,
+    filas: lista,
+    resumen: [{ label: 'Total', valor: lista.length }, { label: 'Monto Total', valor: formatGs(total) }],
+  });
 };
 
 window.campAbrirFormGasto = async function() {
@@ -2325,15 +2618,35 @@ window.campEliminarGasto = async function(id) {
 // ─────────────────────── PRESUPUESTO ────────────────────────────
 async function campRenderPresupuesto(container) {
   const presupuestos = await api.camp.presupuestos();
+  window._campPresupuestosList = presupuestos;
   const colores = ['blue','green','red','amber','purple','teal'];
 
   container.innerHTML = `
-    <div class="flex items-center justify-between mb-5">
+    <div class="flex items-center justify-between flex-wrap gap-2 mb-5">
       <p class="text-xs text-slate-400">Configurá los rubros del presupuesto de campaña</p>
-      <button onclick="campAbrirFormPresupuesto()" class="bg-red-600 hover:bg-red-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-        Nuevo Rubro
-      </button>
+      <div class="flex gap-2">
+        <div class="relative" id="presuExportWrap">
+          <button onclick="campToggleExport('presu')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 transition-all">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+            Exportar
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/></svg>
+          </button>
+          <div id="presuExportDd" class="hidden absolute right-0 top-full mt-1 w-44 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 py-1">
+            <button onclick="campExportarPresupuesto();campToggleExport('presu',false)" class="w-full text-left px-4 py-2.5 text-xs font-semibold text-slate-200 hover:bg-slate-800 flex items-center gap-2">
+              <svg class="w-3.5 h-3.5 text-red-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
+              Exportar PDF
+            </button>
+            <button onclick="campImprimirPresupuesto();campToggleExport('presu',false)" class="w-full text-left px-4 py-2.5 text-xs font-semibold text-slate-300 hover:bg-slate-800 flex items-center gap-2">
+              <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0021 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 00-1.913-.247M6.34 18H5.25A2.25 2.25 0 013 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.056 48.056 0 011.913-.247m10.5 0a48.536 48.536 0 00-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.659M18 10.5h.008v.008H18V10.5zm-3 0h.008v.008H15V10.5z"/></svg>
+              Imprimir Lista
+            </button>
+          </div>
+        </div>
+        <button onclick="campAbrirFormPresupuesto()" class="bg-red-600 hover:bg-red-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+          Nuevo Rubro
+        </button>
+      </div>
     </div>
 
     <div id="campListaPresu" class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2375,6 +2688,41 @@ async function campRenderPresupuesto(container) {
       </div>`}
     </div>
   `;
+
+  // Attach export/print to window (after render so data is available)
+  const _presuCols = [
+    { label: 'Rubro',          key: 'nombre',      w: 60 },
+    { label: 'Descripción',    key: 'descripcion', w: 52 },
+    { label: 'Asignado (Gs.)', key: 'monto_total', w: 38, align: 'r', fmt: v => formatGs(parseInt(v)||0), color: () => [30,100,180] },
+    { label: 'Gastado (Gs.)',  key: 'gastado',     w: 38, align: 'r', fmt: v => formatGs(parseInt(v)||0), color: () => [185,28,28] },
+    { label: 'Libre (Gs.)',    key: '_libre',       w: 38, align: 'r', fmt: (_v,row) => formatGs((parseInt(row.monto_total)||0)-(parseInt(row.gastado)||0)), color: (row) => ((parseInt(row.monto_total)||0)-(parseInt(row.gastado)||0))>=0?[5,150,105]:[185,28,28] },
+    { label: '% Uso',          key: '_pct',         w: 18, align: 'r', fmt: (_v,row) => { const t=parseInt(row.monto_total)||0, g=parseInt(row.gastado)||0; return t>0?Math.round(g/t*100)+'%':'0%'; }, color: (row) => { const t=parseInt(row.monto_total)||0, g=parseInt(row.gastado)||0, pc=t>0?g/t*100:0; return pc>=90?[185,28,28]:pc>=70?[180,120,0]:[5,150,105]; } },
+  ];
+
+  window.campExportarPresupuesto = function() {
+    const lista = window._campPresupuestosList || [];
+    const totAsig = lista.reduce((s,p) => s+(parseInt(p.monto_total)||0), 0);
+    const totGast = lista.reduce((s,p) => s+(parseInt(p.gastado)||0), 0);
+    campExportarPDF({
+      titulo: 'Presupuesto de Campaña',
+      subtitulo: 'Rubros y Estado de Ejecución',
+      columnas: _presuCols,
+      filas: lista,
+      resumen: [
+        { label: 'Total Asignado', valor: formatGs(totAsig) },
+        { label: 'Total Gastado',  valor: formatGs(totGast) },
+        { label: 'Total Libre',    valor: formatGs(totAsig-totGast) },
+        { label: '% Ejecutado',    valor: totAsig>0 ? Math.round(totGast/totAsig*100)+'%' : '0%' },
+      ],
+      filename: 'presupuesto-campaña',
+      landscape: true,
+    });
+  };
+
+  window.campImprimirPresupuesto = function() {
+    const lista = window._campPresupuestosList || [];
+    campImprimirLog({ titulo: 'Presupuesto de Campaña', columnas: _presuCols, filas: lista });
+  };
 }
 
 window.campAbrirFormPresupuesto = function(id = null, nombre = '', monto = '', color = 'blue', descripcion = '') {
@@ -2461,22 +2809,30 @@ window.campBorrarPresupuesto = async function(id) {
 // ─────────────────────── CAJA ────────────────────────────────────
 async function campRenderCaja(container) {
   const movimientos = await api.camp.caja();
-  const ingresos  = movimientos.filter(m => m.tipo === 'ingreso')   .reduce((s, m) => s + parseInt(m.monto), 0);
-  const egresos   = movimientos.filter(m => ['egreso','entrega'].includes(m.tipo)).reduce((s, m) => s + parseInt(m.monto), 0);
-  const saldo     = ingresos - egresos;
+  window._campCaja = movimientos;
+  const ingresos = movimientos.filter(m => m.tipo === 'ingreso').reduce((s, m) => s + parseInt(m.monto), 0);
+  const egresos  = movimientos.filter(m => ['egreso','entrega','rendicion'].includes(m.tipo)).reduce((s, m) => s + parseInt(m.monto), 0);
+  const saldo    = ingresos - egresos;
 
-  const TIPOS_CAJA = ['ingreso','egreso','entrega','rendicion'];
   const tipoLabel = { ingreso: '💰 Ingreso', egreso: '💸 Egreso', entrega: '🤝 Entrega', rendicion: '📋 Rendición' };
-  const tipoBadge = {
-    ingreso:   'bg-emerald-950/60 text-emerald-400 border border-emerald-800/60',
-    egreso:    'bg-red-950/60 text-red-400 border border-red-800/60',
-    entrega:   'bg-amber-950/60 text-amber-400 border border-amber-800/60',
-    rendicion: 'bg-blue-950/60 text-blue-400 border border-blue-800/60',
-  };
+  const tipoBadge = { ingreso: 'bg-emerald-950/60 text-emerald-400 border border-emerald-800/60', egreso: 'bg-red-950/60 text-red-400 border border-red-800/60', entrega: 'bg-amber-950/60 text-amber-400 border border-amber-800/60', rendicion: 'bg-blue-950/60 text-blue-400 border border-blue-800/60' };
+
+  const renderLista = (lista) => lista.length ? lista.map(m => `
+    <div class="bg-slate-900/70 border border-slate-800/60 rounded-2xl p-4 flex flex-wrap items-center gap-3">
+      <span class="text-[10px] font-bold px-2.5 py-1 rounded-full ${tipoBadge[m.tipo]||tipoBadge.egreso}">${tipoLabel[m.tipo]||m.tipo}</span>
+      <div class="flex-1 min-w-0">
+        <p class="text-xs font-semibold text-slate-200 truncate">${m.descripcion||'-'}</p>
+        <div class="text-[10px] text-slate-500 mt-0.5 flex gap-3 flex-wrap">
+          <span>👤 ${m.responsable_nombre||'-'}</span>
+          ${m.destinatario_nombre?`<span>→ ${m.destinatario_nombre}</span>`:''}
+          <span>📅 ${m.fecha?new Date(m.fecha).toLocaleString('es-PY',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'-'}</span>
+        </div>
+      </div>
+      <span class="font-extrabold text-sm ${m.tipo==='ingreso'?'text-emerald-400':'text-red-400'} shrink-0">${formatGs(m.monto)}</span>
+    </div>`).join('') : `<div class="text-center py-12 text-slate-500 text-sm">Sin movimientos</div>`;
 
   container.innerHTML = `
-    <!-- KPIs Caja -->
-    <div class="grid grid-cols-3 gap-3 mb-5">
+    <div class="grid grid-cols-3 gap-3 mb-4">
       <div class="bg-emerald-950/40 border border-emerald-800/50 rounded-2xl p-4 text-center">
         <p class="text-[10px] text-emerald-500 uppercase font-bold mb-1">Ingresos</p>
         <p class="text-base font-extrabold text-emerald-400">${formatGs(ingresos)}</p>
@@ -2485,43 +2841,48 @@ async function campRenderCaja(container) {
         <p class="text-[10px] text-red-500 uppercase font-bold mb-1">Egresos</p>
         <p class="text-base font-extrabold text-red-400">${formatGs(egresos)}</p>
       </div>
-      <div class="bg-slate-900/70 border ${saldo >= 0 ? 'border-emerald-800/40' : 'border-red-800/40'} rounded-2xl p-4 text-center">
+      <div class="bg-slate-900/70 border ${saldo>=0?'border-emerald-800/40':'border-red-800/40'} rounded-2xl p-4 text-center">
         <p class="text-[10px] text-slate-500 uppercase font-bold mb-1">Saldo</p>
-        <p class="text-base font-extrabold ${saldo >= 0 ? 'text-emerald-400' : 'text-red-400'}">${formatGs(saldo)}</p>
+        <p class="text-base font-extrabold ${saldo>=0?'text-emerald-400':'text-red-400'}">${formatGs(saldo)}</p>
       </div>
     </div>
-
-    <div class="flex items-center justify-between mb-4">
-      <p class="text-xs text-slate-500">${movimientos.length} movimiento${movimientos.length !== 1 ? 's' : ''}</p>
-      <button onclick="campAbrirFormCaja()" class="bg-red-600 hover:bg-red-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-        Nuevo Movimiento
-      </button>
-    </div>
-
-    <div class="space-y-2.5">
-      ${movimientos.length ? movimientos.map(m => `
-        <div class="bg-slate-900/70 border border-slate-800/60 rounded-2xl p-4 flex flex-wrap items-center gap-3">
-          <span class="text-[10px] font-bold px-2.5 py-1 rounded-full ${tipoBadge[m.tipo] || tipoBadge.egreso}">${tipoLabel[m.tipo] || m.tipo}</span>
-          <div class="flex-1 min-w-0">
-            <p class="text-xs font-semibold text-slate-200 truncate">${m.descripcion || '-'}</p>
-            <div class="text-[10px] text-slate-500 mt-0.5 flex gap-3 flex-wrap">
-              <span>👤 ${m.responsable_nombre || '-'}</span>
-              ${m.destinatario_nombre ? `<span>→ ${m.destinatario_nombre}</span>` : ''}
-              <span>📅 ${m.fecha ? new Date(m.fecha).toLocaleString('es-PY', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '-'}</span>
-            </div>
-          </div>
-          <div class="flex items-center gap-2 shrink-0">
-            <span class="font-extrabold text-sm ${['ingreso'].includes(m.tipo) ? 'text-emerald-400' : 'text-red-400'}">${formatGs(m.monto)}</span>
-          </div>
-        </div>`).join('') : `
-        <div class="text-center py-14 text-slate-600">
-          <svg class="w-10 h-10 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"/></svg>
-          <p class="text-sm font-semibold text-slate-500">Sin movimientos de caja</p>
-        </div>`}
-    </div>
+    ${campToolbarHTML({ searchId:'cajaBuscar', filtros:[{ id:'cajaFiltroTipo', placeholder:'Todos los tipos', opciones:[{val:'ingreso',label:'💰 Ingreso'},{val:'egreso',label:'💸 Egreso'},{val:'entrega',label:'🤝 Entrega'},{val:'rendicion',label:'📋 Rendición'}] }], newBtn:'campAbrirFormCaja()', exportFn:'campExportarCaja', printFn:'campImprimirCaja()', count:movimientos.length, countLabel:'movimiento' })}
+    <div id="campListaCaja" class="space-y-2.5">${renderLista(movimientos)}</div>
   `;
+
+  window._campCajaRender = renderLista;
+  window.campFiltrarCaja = function() {
+    const q = (document.getElementById('cajaBuscar')?.value||'').toLowerCase();
+    const t = document.getElementById('cajaFiltroTipo')?.value||'';
+    const lista = (window._campCaja||[]).filter(m => {
+      if (t && m.tipo !== t) return false;
+      if (q && !`${m.descripcion||''} ${m.responsable_nombre||''} ${m.destinatario_nombre||''}`.toLowerCase().includes(q)) return false;
+      return true;
+    });
+    const div = document.getElementById('campListaCaja');
+    const cnt = document.getElementById('cajaBuscarCount');
+    if (div) div.innerHTML = renderLista(lista);
+    if (cnt) cnt.textContent = `${lista.length} movimiento${lista.length!==1?'s':''}`;
+    window._campCajaFiltrada = lista;
+  };
 }
+
+const _cajaCols = [
+  { label: 'Fecha',        key: f => f.fecha ? new Date(f.fecha).toLocaleString('es-PY',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '-', w: 35 },
+  { label: 'Tipo',         key: 'tipo',                 w: 22 },
+  { label: 'Descripción',  key: 'descripcion',           w: 60 },
+  { label: 'Responsable',  key: 'responsable_nombre',    w: 38 },
+  { label: 'Destinatario', key: 'destinatario_nombre',   w: 38 },
+  { label: 'Monto (Gs.)', key: 'monto', w: 30, align:'r', total:true, fmt: v => formatGs(v), color: f => f.tipo==='ingreso'?[21,128,61]:[185,28,28] },
+];
+window.campExportarCaja = function(tipo) {
+  const lista = window._campCajaFiltrada || window._campCaja || [];
+  if (tipo==='pdf') campExportarPDF({ titulo:'MOVIMIENTOS DE CAJA', columnas:_cajaCols, filas:lista, resumen:[{label:'Total',valor:lista.length},{label:'Ingresos',valor:formatGs(lista.filter(m=>m.tipo==='ingreso').reduce((s,m)=>s+parseInt(m.monto),0))},{label:'Egresos',valor:formatGs(lista.filter(m=>m.tipo!=='ingreso').reduce((s,m)=>s+parseInt(m.monto),0))}], filename:'Caja', landscape:true });
+};
+window.campImprimirCaja = function() {
+  const lista = window._campCajaFiltrada || window._campCaja || [];
+  campImprimirLog({ titulo:'MOVIMIENTOS DE CAJA', columnas:_cajaCols, filas:lista, resumen:[{label:'Total',valor:lista.length}] });
+};
 
 window.campAbrirFormCaja = function() {
   const modal = document.createElement('div');
@@ -2586,6 +2947,23 @@ window.campAbrirFormCaja = function() {
 // ─────────────────────── VEHÍCULOS ──────────────────────────────
 async function campRenderVehiculos(container) {
   const vehiculos = await api.camp.vehiculosCamp();
+  window._campVehiculosList = vehiculos;
+
+  // Toolbar con búsqueda + filtro estado + exportar
+  const toolbarHtml = campToolbarHTML({
+    searchId: 'vehicBuscar',
+    filtros: [{ id: 'vehicFiltroEstado', placeholder: 'Todos los estados', opciones: [
+      { val: 'disponible', label: '✓ Disponible' },
+      { val: 'en_ruta', label: '▶ En Ruta' },
+      { val: 'sin_combustible', label: '⛽ Sin Combustible' },
+      { val: 'en_reparacion', label: '🔧 En Reparación' },
+    ]}],
+    newBtn: 'campAbrirFormVehiculo()',
+    exportFn: 'campExportarVehiculos',
+    printFn: 'campImprimirVehiculos()',
+    count: vehiculos.length,
+    countLabel: 'vehículo',
+  });
   const estadoStyle = {
     disponible:  'bg-emerald-950/60 text-emerald-400 border border-emerald-800/50',
     en_ruta:     'bg-blue-950/60 text-blue-400 border border-blue-800/50',
@@ -2594,74 +2972,69 @@ async function campRenderVehiculos(container) {
     inactivo:    'bg-slate-900 text-slate-500 border border-slate-800',
   };
 
-  container.innerHTML = `
-    <div class="flex items-center justify-between mb-5">
-      <p class="text-xs text-slate-400">${vehiculos.length} vehículo${vehiculos.length !== 1 ? 's' : ''} en la flota</p>
-      <button onclick="campAbrirFormVehiculo()" class="bg-red-600 hover:bg-red-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-        Agregar Vehículo
-      </button>
-    </div>
+  const renderFlota = (lista) => lista.length ? `<div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="campGridVehiculos">` + lista.map(v => {
+    const fuelColor = v.combustible < 20 ? 'bg-red-500' : v.combustible < 50 ? 'bg-amber-500' : 'bg-emerald-500';
+    const st = estadoStyle[v.estado] || estadoStyle.disponible;
+    return `<div class="bg-slate-900/70 border border-slate-800/60 rounded-2xl p-5 group relative">
+      <div class="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button onclick="campEditarVehiculo(${v.id})" class="w-7 h-7 bg-slate-800 hover:bg-slate-700 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-100"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"/></svg></button>
+        <button onclick="campBorrarVehiculo(${v.id})" class="w-7 h-7 bg-slate-800 hover:bg-red-900/50 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-400"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>
+      </div>
+      <div class="flex items-start gap-3 mb-3"><div class="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center shrink-0"><svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 17H5a2 2 0 01-2-2V9m2-4h12l2 4v6a2 2 0 01-2 2h-3M9 7h6M9 17h.01M17 17h.01M3 9h18"/></svg></div>
+        <div><h4 class="font-bold text-slate-100 leading-tight">${v.nombre}</h4><p class="text-[11px] text-slate-500 mt-0.5">${v.modelo||'-'} · Placa: <strong class="text-slate-400">${v.placa||'-'}</strong></p></div>
+      </div>
+      <div class="grid grid-cols-2 gap-2 text-[11px] mb-3">
+        <div><span class="text-slate-600">Chofer:</span> <span class="text-slate-300 font-semibold">${v.chofer||'-'}</span></div>
+        <div><span class="text-slate-600">Tel:</span> <span class="text-slate-300">${v.telefono||'-'}</span></div>
+        <div><span class="text-slate-600">Capacidad:</span> <span class="text-slate-300">${v.capacidad} pers.</span></div>
+        <div><span class="text-slate-600">Tareas activas:</span> <span class="font-bold ${parseInt(v.tareas_activas)>0?'text-amber-400':'text-slate-400'}">${v.tareas_activas}</span></div>
+      </div>
+      <div class="mb-3"><div class="flex justify-between text-[10px] mb-1"><span class="text-slate-500 uppercase font-bold">Combustible</span><span class="font-bold ${v.combustible<20?'text-red-400':v.combustible<50?'text-amber-400':'text-emerald-400'}">${v.combustible}%</span></div>
+        <div class="h-2 bg-slate-800 rounded-full overflow-hidden"><div class="h-full rounded-full transition-all ${fuelColor}" style="width:${v.combustible}%"></div></div></div>
+      <div class="flex items-center justify-between">
+        <span class="text-[10px] font-bold px-2.5 py-1 rounded-full ${st}">${v.estado.replace('_',' ').toUpperCase()}</span>
+        <div class="flex gap-1">${['disponible','en_ruta','sin_combustible','en_reparacion'].map(est => `<button onclick="campCambiarEstadoVehiculo(${v.id},'${est}')" title="${est}" class="w-6 h-6 rounded-lg ${v.estado===est?'bg-red-600 text-white':'bg-slate-800 hover:bg-slate-700 text-slate-500 hover:text-slate-200'} flex items-center justify-center text-[9px] font-bold transition-all">${est==='disponible'?'✓':est==='en_ruta'?'▶':est==='sin_combustible'?'⛽':'🔧'}</button>`).join('')}</div>
+      </div>
+    </div>`;
+  }).join('') + '</div>' : `<div class="text-center py-16 text-slate-600"><p class="text-sm font-semibold text-slate-500">Sin vehículos</p></div>`;
 
-    ${vehiculos.length ? `
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      ${vehiculos.map(v => {
-        const fuelColor = v.combustible < 20 ? 'bg-red-500' : v.combustible < 50 ? 'bg-amber-500' : 'bg-emerald-500';
-        const st = estadoStyle[v.estado] || estadoStyle.disponible;
-        return `
-        <div class="bg-slate-900/70 border border-slate-800/60 rounded-2xl p-5 group relative">
-          <div class="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button onclick="campEditarVehiculo(${v.id})" class="w-7 h-7 bg-slate-800 hover:bg-slate-700 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-100">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"/></svg>
-            </button>
-            <button onclick="campBorrarVehiculo(${v.id})" class="w-7 h-7 bg-slate-800 hover:bg-red-900/50 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-400">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-            </button>
-          </div>
-          <div class="flex items-start gap-3 mb-3">
-            <div class="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center shrink-0">
-              <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 17H5a2 2 0 01-2-2V9m2-4h12l2 4v6a2 2 0 01-2 2h-3M9 7h6M9 17h.01M17 17h.01M3 9h18"/></svg>
-            </div>
-            <div>
-              <h4 class="font-bold text-slate-100 leading-tight">${v.nombre}</h4>
-              <p class="text-[11px] text-slate-500 mt-0.5">${v.modelo || '-'} · Placa: <strong class="text-slate-400">${v.placa || '-'}</strong></p>
-            </div>
-          </div>
-          <div class="grid grid-cols-2 gap-2 text-[11px] mb-3">
-            <div><span class="text-slate-600">Chofer:</span> <span class="text-slate-300 font-semibold">${v.chofer || '-'}</span></div>
-            <div><span class="text-slate-600">Tel:</span> <span class="text-slate-300">${v.telefono || '-'}</span></div>
-            <div><span class="text-slate-600">Capacidad:</span> <span class="text-slate-300">${v.capacidad} personas</span></div>
-            <div><span class="text-slate-600">Tareas activas:</span> <span class="font-bold ${parseInt(v.tareas_activas)>0?'text-amber-400':'text-slate-400'}">${v.tareas_activas}</span></div>
-          </div>
-          <div class="mb-3">
-            <div class="flex justify-between text-[10px] mb-1">
-              <span class="text-slate-500 uppercase font-bold">Combustible</span>
-              <span class="font-bold ${v.combustible < 20 ? 'text-red-400' : v.combustible < 50 ? 'text-amber-400' : 'text-emerald-400'}">${v.combustible}%</span>
-            </div>
-            <div class="h-2 bg-slate-800 rounded-full overflow-hidden">
-              <div class="h-full rounded-full transition-all ${fuelColor}" style="width:${v.combustible}%"></div>
-            </div>
-          </div>
-          <div class="flex items-center justify-between">
-            <span class="text-[10px] font-bold px-2.5 py-1 rounded-full ${st}">${v.estado.replace('_',' ').toUpperCase()}</span>
-            <div class="flex gap-1">
-              ${['disponible','en_ruta','sin_combustible','en_reparacion'].map(est => `
-                <button onclick="campCambiarEstadoVehiculo(${v.id},'${est}')" title="${est}"
-                  class="w-6 h-6 rounded-lg ${v.estado===est?'bg-red-600 text-white':'bg-slate-800 hover:bg-slate-700 text-slate-500 hover:text-slate-200'} flex items-center justify-center text-[9px] font-bold transition-all">
-                  ${est==='disponible'?'✓':est==='en_ruta'?'▶':est==='sin_combustible'?'⛽':'🔧'}
-                </button>`).join('')}
-            </div>
-          </div>
-        </div>`;
-      }).join('')}
-    </div>` : `
-    <div class="text-center py-16 text-slate-600">
-      <svg class="w-12 h-12 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 17H5a2 2 0 01-2-2V9m2-4h12l2 4v6a2 2 0 01-2 2h-3M9 7h6M9 17h.01M17 17h.01M3 9h18"/></svg>
-      <p class="text-sm font-semibold text-slate-500">Sin vehículos registrados</p>
-      <p class="text-xs text-slate-600 mt-1">Agregá la flota para asignar tareas y actividades</p>
-    </div>`}
-  `;
+  container.innerHTML = toolbarHtml + `<div id="campGridVehiculosWrap">${renderFlota(vehiculos)}</div>`;
   window._campVehiculos = vehiculos;
+  window._campVehiculosRender = renderFlota;
+  window.campFiltrarVehiculos = function() {
+    const q = (document.getElementById('vehicBuscar')?.value||'').toLowerCase();
+    const e = document.getElementById('vehicFiltroEstado')?.value||'';
+    const lista = (window._campVehiculosList||[]).filter(v => {
+      if (e && v.estado !== e) return false;
+      if (q && !`${v.nombre} ${v.placa||''} ${v.chofer||''} ${v.modelo||''}`.toLowerCase().includes(q)) return false;
+      return true;
+    });
+    const wrap = document.getElementById('campGridVehiculosWrap');
+    const cnt  = document.getElementById('vehicBuscarCount');
+    if (wrap) wrap.innerHTML = renderFlota(lista);
+    if (cnt)  cnt.textContent = `${lista.length} vehículo${lista.length!==1?'s':''}`;
+    window._campVehiculosFiltrada = lista;
+  };
+
+  // Export/print
+  const _vehCols = [
+    { label:'Nombre',     key:'nombre',     w:32 },
+    { label:'Placa',      key:'placa',       w:20 },
+    { label:'Modelo',     key:'modelo',      w:32 },
+    { label:'Chofer',     key:'chofer',      w:30 },
+    { label:'Capacidad',  key:'capacidad',   w:18, align:'r' },
+    { label:'Combustible',key:'combustible', w:22, align:'r', fmt: v => `${v}%`, color: f => f.combustible<20?[185,28,28]:f.combustible<50?[146,64,14]:[21,128,61] },
+    { label:'Estado',     key: f => f.estado.replace('_',' ').toUpperCase(), w:30 },
+  ];
+  window.campExportarVehiculos = function(tipo) {
+    const lista = window._campVehiculosFiltrada || window._campVehiculosList || [];
+    if (tipo==='pdf') campExportarPDF({ titulo:'FLOTA DE VEHÍCULOS', columnas:_vehCols, filas:lista, resumen:[{label:'Total',valor:lista.length},{label:'Disponibles',valor:lista.filter(v=>v.estado==='disponible').length},{label:'En Ruta',valor:lista.filter(v=>v.estado==='en_ruta').length}], filename:'Vehiculos' });
+  };
+  window.campImprimirVehiculos = function() {
+    const lista = window._campVehiculosFiltrada || window._campVehiculosList || [];
+    campImprimirLog({ titulo:'FLOTA DE VEHÍCULOS', columnas:_vehCols, filas:lista, resumen:[{label:'Total',valor:lista.length}] });
+  };
+
 }
 
 window.campAbrirFormVehiculo = function(v = {}) {
@@ -2770,10 +3143,7 @@ window.campCambiarEstadoVehiculo = async function(id, estado) {
 async function campRenderTareas(container) {
   const [tareas, vehiculos] = await Promise.all([api.camp.tareas(), api.camp.vehiculosCamp()]);
   window._campVehiculos = vehiculos;
-
-  const pendientes   = tareas.filter(t => t.estado === 'pendiente');
-  const enCamino     = tareas.filter(t => t.estado === 'en_camino');
-  const completadas  = tareas.filter(t => t.estado === 'completado');
+  window._campTareas = tareas;
 
   const prioStyle = { urgente: 'bg-red-900/60 text-red-400 border-red-800/60', alta: 'bg-amber-900/60 text-amber-400 border-amber-800/60', normal: 'bg-slate-800 text-slate-400 border-slate-700' };
 
@@ -2781,7 +3151,7 @@ async function campRenderTareas(container) {
     <div class="bg-slate-950 border border-slate-800/80 rounded-xl p-3.5 group">
       <div class="flex items-start justify-between gap-2 mb-2">
         <p class="text-xs font-bold text-slate-100 leading-tight flex-1">${t.titulo}</p>
-        <span class="text-[9px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${prioStyle[t.prioridad]||prioStyle.normal}">${t.prioridad?.toUpperCase()}</span>
+        <span class="text-[9px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${prioStyle[t.prioridad]||prioStyle.normal}">${(t.prioridad||'').toUpperCase()}</span>
       </div>
       ${t.descripcion ? `<p class="text-[10px] text-slate-500 mb-2 line-clamp-2">${t.descripcion}</p>` : ''}
       <div class="text-[10px] text-slate-600 space-y-0.5">
@@ -2798,49 +3168,115 @@ async function campRenderTareas(container) {
       </div>
     </div>`;
 
-  container.innerHTML = `
-    <div class="flex items-center justify-between mb-5">
-      <p class="text-xs text-slate-400">${tareas.length} tarea${tareas.length !== 1 ? 's' : ''} en total</p>
-      <button onclick="campAbrirFormTarea()" class="bg-red-600 hover:bg-red-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-        Nueva Tarea
-      </button>
-    </div>
-
-    <!-- Kanban 3 columnas -->
+  const renderKanban = (lista) => {
+    const pend = lista.filter(t => t.estado === 'pendiente');
+    const enc  = lista.filter(t => t.estado === 'en_camino');
+    const comp = lista.filter(t => t.estado === 'completado');
+    return `
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <div class="bg-slate-900/50 border border-slate-800/50 rounded-2xl p-4">
         <div class="flex items-center gap-2 mb-3">
           <span class="w-2.5 h-2.5 rounded-full bg-slate-500"></span>
           <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Pendiente</span>
-          <span class="ml-auto text-xs font-bold bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full">${pendientes.length}</span>
+          <span class="ml-auto text-xs font-bold bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full">${pend.length}</span>
         </div>
-        <div class="space-y-2.5">
-          ${pendientes.length ? pendientes.map(tarjeta).join('') : '<p class="text-[11px] text-slate-600 text-center py-4">Sin tareas pendientes</p>'}
-        </div>
+        <div class="space-y-2.5">${pend.length ? pend.map(tarjeta).join('') : '<p class="text-[11px] text-slate-600 text-center py-4">Sin tareas pendientes</p>'}</div>
       </div>
       <div class="bg-blue-950/20 border border-blue-900/30 rounded-2xl p-4">
         <div class="flex items-center gap-2 mb-3">
           <span class="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse"></span>
           <span class="text-xs font-bold text-blue-400 uppercase tracking-wider">En Camino</span>
-          <span class="ml-auto text-xs font-bold bg-blue-950/60 text-blue-400 px-2 py-0.5 rounded-full">${enCamino.length}</span>
+          <span class="ml-auto text-xs font-bold bg-blue-950/60 text-blue-400 px-2 py-0.5 rounded-full">${enc.length}</span>
         </div>
-        <div class="space-y-2.5">
-          ${enCamino.length ? enCamino.map(tarjeta).join('') : '<p class="text-[11px] text-slate-600 text-center py-4">Ninguna en curso</p>'}
-        </div>
+        <div class="space-y-2.5">${enc.length ? enc.map(tarjeta).join('') : '<p class="text-[11px] text-slate-600 text-center py-4">Ninguna en curso</p>'}</div>
       </div>
       <div class="bg-emerald-950/20 border border-emerald-900/30 rounded-2xl p-4">
         <div class="flex items-center gap-2 mb-3">
           <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
           <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider">Completado</span>
-          <span class="ml-auto text-xs font-bold bg-emerald-950/60 text-emerald-400 px-2 py-0.5 rounded-full">${completadas.length}</span>
+          <span class="ml-auto text-xs font-bold bg-emerald-950/60 text-emerald-400 px-2 py-0.5 rounded-full">${comp.length}</span>
         </div>
-        <div class="space-y-2.5">
-          ${completadas.length ? completadas.map(tarjeta).join('') : '<p class="text-[11px] text-slate-600 text-center py-4">Ninguna completada aún</p>'}
-        </div>
+        <div class="space-y-2.5">${comp.length ? comp.map(tarjeta).join('') : '<p class="text-[11px] text-slate-600 text-center py-4">Ninguna completada aún</p>'}</div>
       </div>
-    </div>
-  `;
+    </div>`;
+  };
+
+  const toolbarHtml = campToolbarHTML({
+    searchId: 'tareasBuscar',
+    filtros: [
+      { id: 'tareasFiltroEstado', placeholder: 'Todos los estados', opciones: [
+        { val: 'pendiente',  label: '⏳ Pendiente' },
+        { val: 'en_camino',  label: '▶ En Camino' },
+        { val: 'completado', label: '✓ Completado' },
+      ]},
+      { id: 'tareasFiltroPrio', placeholder: 'Toda prioridad', opciones: [
+        { val: 'urgente', label: '🔴 Urgente' },
+        { val: 'alta',    label: '🟠 Alta' },
+        { val: 'normal',  label: '⚪ Normal' },
+      ]},
+    ],
+    newBtn: 'campAbrirFormTarea()',
+    exportFn: 'campExportarTareas',
+    printFn: 'campImprimirTareas()',
+    count: tareas.length,
+    countLabel: 'tarea',
+  });
+
+  container.innerHTML = toolbarHtml + `<div id="campKanbanWrap">${renderKanban(tareas)}</div>`;
+
+  window.campFiltrarTareas = function() {
+    const q    = (document.getElementById('tareasBuscar')?.value || '').toLowerCase().trim();
+    const est  = document.getElementById('tareasFiltroEstado')?.value || '';
+    const prio = document.getElementById('tareasFiltroPrio')?.value || '';
+    const lista = window._campTareas || [];
+    const filtrado = lista.filter(t => {
+      const matchQ = !q || (t.titulo||'').toLowerCase().includes(q)
+                       || (t.asignado_nombre||'').toLowerCase().includes(q)
+                       || (t.tipo||'').toLowerCase().includes(q);
+      const matchE = !est  || t.estado === est;
+      const matchP = !prio || t.prioridad === prio;
+      return matchQ && matchE && matchP;
+    });
+    const wrap = document.getElementById('campKanbanWrap');
+    if (wrap) wrap.innerHTML = renderKanban(filtrado);
+    const countEl = document.getElementById('tareasBuscarCount');
+    if (countEl) countEl.textContent = filtrado.length + ' tarea' + (filtrado.length !== 1 ? 's' : '');
+  };
+
+  const _tareaCols = [
+    { label: 'Título',      key: 'titulo',          w: 58 },
+    { label: 'Tipo',        key: 'tipo',             w: 38 },
+    { label: 'Asignado',    key: 'asignado_nombre',  w: 32 },
+    { label: 'Estado',      key: 'estado',           w: 24, fmt: v => (v||'').replace('_',' ').toUpperCase() },
+    { label: 'Prioridad',   key: 'prioridad',        w: 22, fmt: v => (v||'').toUpperCase() },
+    { label: 'Tiempo (min)',key: 'tiempo_estimado',  w: 22, align: 'r', fmt: v => v ? v + ' min' : '-' },
+  ];
+
+  window.campExportarTareas = function() {
+    const lista = window._campTareas || [];
+    const pend = lista.filter(t=>t.estado==='pendiente').length;
+    const enc  = lista.filter(t=>t.estado==='en_camino').length;
+    const comp = lista.filter(t=>t.estado==='completado').length;
+    campExportarPDF({
+      titulo: 'Registro de Tareas',
+      subtitulo: 'Sistema de Gestión Logística',
+      columnas: _tareaCols,
+      filas: lista,
+      resumen: [
+        { label: 'Total',      valor: lista.length.toString() },
+        { label: 'Pendientes', valor: pend.toString() },
+        { label: 'En Camino',  valor: enc.toString() },
+        { label: 'Completadas',valor: comp.toString() },
+      ],
+      filename: 'tareas-logistica',
+      landscape: true,
+    });
+  };
+
+  window.campImprimirTareas = function() {
+    const lista = window._campTareas || [];
+    campImprimirLog({ titulo: 'Registro de Tareas', columnas: _tareaCols, filas: lista });
+  };
 }
 
 window.campMoverTarea = async function(id, estado) {
@@ -2941,44 +3377,104 @@ const ACT_CATEGORIAS = {
 async function campRenderActividades(container) {
   const [actividades, vehiculos] = await Promise.all([api.camp.actividades(), api.camp.vehiculosCamp()]);
   window._campVehiculos = vehiculos;
+  window._campActividades = actividades;
 
   const catBadge = { movilizacion: 'bg-blue-950/60 text-blue-400 border-blue-800/50', operativa: 'bg-amber-950/60 text-amber-400 border-amber-800/50', electoral: 'bg-emerald-950/60 text-emerald-400 border-emerald-800/50' };
 
-  container.innerHTML = `
-    <div class="flex items-center justify-between mb-5">
-      <p class="text-xs text-slate-400">${actividades.length} actividad${actividades.length !== 1 ? 'es' : ''} registrada${actividades.length !== 1 ? 's' : ''}</p>
-      <button onclick="campAbrirFormActividad()" class="bg-red-600 hover:bg-red-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-        Registrar Actividad
+  const renderLista = (lista) => lista.length ? lista.map(a => `
+    <div class="bg-slate-900/70 border border-slate-800/60 rounded-2xl p-4 flex flex-wrap items-start gap-3">
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 flex-wrap mb-1">
+          <span class="text-sm font-bold text-slate-100">${a.tipo}</span>
+          ${a.categoria ? `<span class="text-[9px] font-bold px-2 py-0.5 rounded-full border ${catBadge[a.categoria]||'bg-slate-800 text-slate-400 border-slate-700'}">${ACT_CATEGORIAS[a.categoria]?.label||a.categoria}</span>` : ''}
+        </div>
+        ${a.descripcion ? `<p class="text-xs text-slate-400 mb-1">${a.descripcion}</p>` : ''}
+        <div class="flex gap-3 flex-wrap text-[10px] text-slate-500">
+          <span>👤 ${a.responsable_nombre||'-'}</span>
+          ${a.vehiculo_nombre ? `<span>🚗 ${a.vehiculo_nombre}</span>` : ''}
+          <span>📅 ${a.fecha ? new Date(a.fecha).toLocaleString('es-PY',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '-'}</span>
+          ${a.lat ? `<span>📍 GPS</span>` : ''}
+        </div>
+      </div>
+      <button onclick="campEliminarActividad(${a.id})" class="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-red-900/50 text-slate-500 hover:text-red-400 transition-colors shrink-0">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
       </button>
-    </div>
+    </div>`).join('') : `
+    <div class="text-center py-16 text-slate-600">
+      <svg class="w-10 h-10 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+      <p class="text-sm font-semibold text-slate-500">Sin actividades registradas</p>
+    </div>`;
 
-    <div class="space-y-2.5">
-      ${actividades.length ? actividades.map(a => `
-        <div class="bg-slate-900/70 border border-slate-800/60 rounded-2xl p-4 flex flex-wrap items-start gap-3">
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-2 flex-wrap mb-1">
-              <span class="text-sm font-bold text-slate-100">${a.tipo}</span>
-              ${a.categoria ? `<span class="text-[9px] font-bold px-2 py-0.5 rounded-full border ${catBadge[a.categoria]||'bg-slate-800 text-slate-400 border-slate-700'}">${ACT_CATEGORIAS[a.categoria]?.label||a.categoria}</span>` : ''}
-            </div>
-            ${a.descripcion ? `<p class="text-xs text-slate-400 mb-1">${a.descripcion}</p>` : ''}
-            <div class="flex gap-3 flex-wrap text-[10px] text-slate-500">
-              <span>👤 ${a.responsable_nombre||'-'}</span>
-              ${a.vehiculo_nombre ? `<span>🚗 ${a.vehiculo_nombre}</span>` : ''}
-              <span>📅 ${a.fecha ? new Date(a.fecha).toLocaleString('es-PY',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '-'}</span>
-              ${a.lat ? `<span>📍 GPS</span>` : ''}
-            </div>
-          </div>
-          <button onclick="campEliminarActividad(${a.id})" class="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-red-900/50 text-slate-500 hover:text-red-400 transition-colors shrink-0">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-          </button>
-        </div>`).join('') : `
-      <div class="text-center py-16 text-slate-600">
-        <svg class="w-10 h-10 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
-        <p class="text-sm font-semibold text-slate-500">Sin actividades registradas</p>
-      </div>`}
-    </div>
-  `;
+  const toolbarHtml = campToolbarHTML({
+    searchId: 'actBuscar',
+    filtros: [
+      { id: 'actFiltroCateg', placeholder: 'Todas las categorías', opciones: [
+        { val: 'movilizacion', label: '🔵 Movilización' },
+        { val: 'operativa',    label: '🟡 Operativa' },
+        { val: 'electoral',    label: '🟢 Electoral' },
+      ]},
+      { id: 'actFiltroVeh', placeholder: 'Todos los vehículos', opciones: vehiculos.map(v => ({ val: String(v.id), label: v.nombre + (v.placa?' ('+v.placa+')':'') })) },
+    ],
+    newBtn: 'campAbrirFormActividad()',
+    exportFn: 'campExportarActividades',
+    printFn: 'campImprimirActividades()',
+    count: actividades.length,
+    countLabel: 'actividad',
+  });
+
+  container.innerHTML = toolbarHtml + `<div id="campListaActividadesWrap" class="space-y-2.5">${renderLista(actividades)}</div>`;
+
+  window.campFiltrarActividades = function() {
+    const q    = (document.getElementById('actBuscar')?.value || '').toLowerCase().trim();
+    const cat  = document.getElementById('actFiltroCateg')?.value || '';
+    const vid  = document.getElementById('actFiltroVeh')?.value || '';
+    const lista = window._campActividades || [];
+    const filtrado = lista.filter(a => {
+      const matchQ = !q || (a.tipo||'').toLowerCase().includes(q)
+                       || (a.descripcion||'').toLowerCase().includes(q)
+                       || (a.responsable_nombre||'').toLowerCase().includes(q);
+      const matchC = !cat || a.categoria === cat;
+      const matchV = !vid || String(a.vehiculo_id) === vid;
+      return matchQ && matchC && matchV;
+    });
+    const wrap = document.getElementById('campListaActividadesWrap');
+    if (wrap) wrap.innerHTML = renderLista(filtrado);
+    const countEl = document.getElementById('actBuscarCount');
+    if (countEl) countEl.textContent = filtrado.length + ' actividad' + (filtrado.length !== 1 ? 'es' : '');
+  };
+
+  const _actCols = [
+    { label: 'Fecha',        key: 'fecha',              w: 28, fmt: v => v ? new Date(v).toLocaleString('es-PY',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '-' },
+    { label: 'Categoría',    key: 'categoria',          w: 28, fmt: v => ACT_CATEGORIAS[v]?.label || v || '-' },
+    { label: 'Tipo',         key: 'tipo',               w: 52 },
+    { label: 'Descripción',  key: 'descripcion',        w: 52 },
+    { label: 'Responsable',  key: 'responsable_nombre', w: 36 },
+    { label: 'Vehículo',     key: 'vehiculo_nombre',    w: 30 },
+    { label: 'GPS',          key: 'lat',                w: 14, align: 'c', fmt: v => v ? '📍' : '-' },
+  ];
+
+  window.campExportarActividades = function() {
+    const lista = window._campActividades || [];
+    const bycat = {};
+    lista.forEach(a => { const k = ACT_CATEGORIAS[a.categoria]?.label || a.categoria || 'Sin categoría'; bycat[k] = (bycat[k]||0)+1; });
+    campExportarPDF({
+      titulo: 'Registro de Actividades',
+      subtitulo: 'Sistema de Gestión Logística',
+      columnas: _actCols,
+      filas: lista,
+      resumen: [
+        { label: 'Total',  valor: lista.length.toString() },
+        ...Object.entries(bycat).map(([k,v]) => ({ label: k, valor: v.toString() })),
+      ],
+      filename: 'actividades-logistica',
+      landscape: true,
+    });
+  };
+
+  window.campImprimirActividades = function() {
+    const lista = window._campActividades || [];
+    campImprimirLog({ titulo: 'Registro de Actividades', columnas: _actCols, filas: lista });
+  };
 }
 
 window.campAbrirFormActividad = function() {
