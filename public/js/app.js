@@ -625,9 +625,9 @@ async function renderDashboard(container) {
 
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Chart distribution -->
-        <div class="bg-slate-900/60 border border-slate-800/80 rounded-3xl p-6 shadow-xl lg:col-span-1">
-          <h3 class="text-xs font-bold text-slate-200 mb-4 tracking-wider uppercase">Gráfico de Participación</h3>
-          <div class="relative h-[220px]">
+        <div class="bg-slate-900/60 border border-slate-800/80 rounded-3xl p-5 shadow-xl lg:col-span-1">
+          <h3 class="text-xs font-bold text-slate-200 mb-3 tracking-wider uppercase">Gráfico de Participación</h3>
+          <div class="relative h-[200px] overflow-hidden">
             <canvas id="chartEstados"></canvas>
           </div>
         </div>
@@ -695,15 +695,21 @@ async function renderDashboard(container) {
       chartInstance = new Chart(ctx, {
         type: 'doughnut',
         data: { labels: labels, datasets: [{ data: data, backgroundColor: colors, borderWidth: 1, borderColor: '#0f172a' }] },
-        options: { 
-          responsive: true, 
-          maintainAspectRatio: false, 
-          plugins: { 
-            legend: { 
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          layout: { padding: { bottom: 4 } },
+          plugins: {
+            legend: {
               position: 'bottom',
-              labels: { color: '#94a3b8', font: { family: 'Outfit', size: 10 } }
-            } 
-          } 
+              labels: {
+                color: '#94a3b8',
+                font: { family: 'Outfit', size: 9 },
+                boxWidth: 10,
+                padding: 8
+              }
+            }
+          }
         }
       });
     }

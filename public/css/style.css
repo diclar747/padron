@@ -100,10 +100,25 @@
 }
 @media (max-width: 767px) {
   .app-nav button.active {
-    background-color: rgba(220, 38, 38, 0.15) !important;
+    background-color: rgba(220, 38, 38, 0.12) !important;
     color: #ef4444 !important;
     border-left: none !important;
     border-top: 2px solid #ef4444 !important;
+    border-radius: 0.5rem !important;
+  }
+}
+
+/* Mobile bottom nav: safe area + fixed height */
+@media (max-width: 767px) {
+  #appNav {
+    min-height: 64px;
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+    background: rgba(10, 15, 30, 0.98) !important;
+    box-shadow: 0 -1px 0 rgba(255,255,255,0.06), 0 -8px 24px rgba(0,0,0,0.4);
+  }
+  /* Main content respects nav height + safe area */
+  #mainContent {
+    padding-bottom: max(5rem, calc(4rem + env(safe-area-inset-bottom))) !important;
   }
 }
 
@@ -213,7 +228,7 @@ header, main {
 /* FAB Floating Action Button in the bottom-right corner */
 .nav-fab-fixed {
   position: fixed;
-  bottom: 84px; /* Sits cleanly above the bottom nav bar */
+  bottom: calc(72px + env(safe-area-inset-bottom, 0px)); /* Sits cleanly above the bottom nav bar */
   right: 16px;
   z-index: 55;
   width: 52px;
@@ -244,7 +259,7 @@ header, main {
 /* PWA Install Banner Bottom Sheet */
 .pwa-banner {
   position: fixed;
-  bottom: 84px; /* Sits cleanly above the mobile nav bar */
+  bottom: calc(72px + env(safe-area-inset-bottom, 0px)); /* Sits cleanly above the mobile nav bar */
   left: 50%;
   transform: translateX(-50%) translateY(180%);
   width: calc(100% - 24px);

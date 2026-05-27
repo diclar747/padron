@@ -30,7 +30,7 @@
     <div class="flex items-center gap-3">
       <img src="/logo.png" class="w-8 h-8 object-contain md:hidden">
       <h1 class="font-extrabold tracking-tight text-sm md:text-lg bg-gradient-to-r from-red-400 via-rose-300 to-red-500 bg-clip-text text-transparent uppercase select-none">
-        Padrón Electoral ANR
+        Padrón Electoral
       </h1>
     </div>
     <div class="flex items-center gap-4">
@@ -63,7 +63,7 @@
   </div>
 
   <!-- Responsive Navigation -->
-  <nav class="app-nav fixed bottom-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-xl border-t border-slate-800/80 flex justify-around py-1.5 px-2 md:top-0 md:bottom-0 md:right-auto md:left-0 md:w-64 md:flex-col md:justify-start md:py-16 md:px-4 md:border-r md:border-t-0" id="appNav">
+  <nav class="app-nav fixed bottom-0 left-0 right-0 z-50 bg-slate-950 backdrop-blur-xl border-t border-slate-800 flex justify-around py-2 px-1 md:top-0 md:bottom-0 md:right-auto md:left-0 md:w-64 md:flex-col md:justify-start md:py-16 md:px-4 md:border-r md:border-t-0" id="appNav">
     <!-- Toggle Sidebar Button (Desktop Only) -->
     <button id="sidebarToggleBtn" class="hidden md:flex absolute top-6 right-[-12px] w-6 h-6 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-400 hover:text-slate-100 rounded-full items-center justify-center z-50 cursor-pointer shadow-md transition-all active:scale-95">
       <svg id="sidebarToggleIcon" class="w-3 h-3 transform transition-transform duration-200" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
@@ -79,32 +79,32 @@
       <div class="text-[10px] text-red-500 mt-0.5 font-bold uppercase tracking-wider" id="sidebarLogoSubtext">Partido Colorado</div>
     </div>
 
-    <div class="flex md:flex-col justify-around items-center w-full gap-1 md:gap-1.5">
-      <button data-page="dashboard" class="flex flex-col items-center justify-center gap-1 py-1 px-2 text-[10px] md:text-sm font-medium text-slate-400 hover:text-slate-200 transition-all rounded-xl cursor-pointer flex-1 md:flex-none md:flex-row md:justify-start md:gap-3.5 md:py-3 md:px-4 md:w-full group">
-        <svg class="w-5 h-5 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-        <span>Inicio</span>
+    <div class="flex md:flex-col justify-around items-center w-full gap-0.5 md:gap-1.5">
+      <button data-page="dashboard" class="flex flex-col items-center justify-center gap-0.5 py-1.5 px-2 text-[11px] md:text-sm font-semibold text-slate-400 hover:text-slate-100 transition-all rounded-xl cursor-pointer flex-1 md:flex-none md:flex-row md:justify-start md:gap-3.5 md:py-3 md:px-4 md:w-full group">
+        <svg class="w-5 h-5 shrink-0 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        <span class="leading-none">Inicio</span>
       </button>
-      <button data-page="electores" class="flex flex-col items-center justify-center gap-1 py-1 px-2 text-[10px] md:text-sm font-medium text-slate-400 hover:text-slate-200 transition-all rounded-xl cursor-pointer flex-1 md:flex-none md:flex-row md:justify-start md:gap-3.5 md:py-3 md:px-4 md:w-full group">
-        <svg class="w-5 h-5 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        <span>Electores</span>
+      <button data-page="electores" class="flex flex-col items-center justify-center gap-0.5 py-1.5 px-2 text-[11px] md:text-sm font-semibold text-slate-400 hover:text-slate-100 transition-all rounded-xl cursor-pointer flex-1 md:flex-none md:flex-row md:justify-start md:gap-3.5 md:py-3 md:px-4 md:w-full group">
+        <svg class="w-5 h-5 shrink-0 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span class="leading-none">Electores</span>
       </button>
-      <button data-page="cargar" class="flex flex-col items-center justify-center gap-1 py-1 px-2 text-[10px] md:text-sm font-medium text-slate-400 hover:text-slate-200 transition-all rounded-xl cursor-pointer flex-1 md:flex-none md:flex-row md:justify-start md:gap-3.5 md:py-3 md:px-4 md:w-full group">
-        <svg class="w-5 h-5 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-        <span>Cargar</span>
+      <button data-page="cargar" class="flex flex-col items-center justify-center gap-0.5 py-1.5 px-2 text-[11px] md:text-sm font-semibold text-slate-400 hover:text-slate-100 transition-all rounded-xl cursor-pointer flex-1 md:flex-none md:flex-row md:justify-start md:gap-3.5 md:py-3 md:px-4 md:w-full group">
+        <svg class="w-5 h-5 shrink-0 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        <span class="leading-none">Cargar</span>
       </button>
 
       <!-- Mobile Profile & Logout tabs -->
-      <button id="mobileProfileBtn" class="flex md:hidden flex-col items-center justify-center gap-1 py-1 px-2 text-[10px] font-medium text-slate-400 hover:text-slate-200 transition-all rounded-xl cursor-pointer flex-1 group">
-        <svg class="w-5 h-5 group-hover:scale-110 transition-transform text-slate-500 group-hover:text-slate-350" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <button id="mobileProfileBtn" class="flex md:hidden flex-col items-center justify-center gap-0.5 py-1.5 px-2 text-[11px] font-semibold text-slate-400 hover:text-slate-100 transition-all rounded-xl cursor-pointer flex-1 group">
+        <svg class="w-5 h-5 shrink-0 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0z" />
         </svg>
-        <span>Perfil</span>
+        <span class="leading-none">Perfil</span>
       </button>
-      <button id="mobileLogoutBtn" class="flex md:hidden flex-col items-center justify-center gap-1 py-1 px-2 text-[10px] font-medium text-slate-400 hover:text-rose-455 transition-all rounded-xl cursor-pointer flex-1 group">
-        <svg class="w-5 h-5 group-hover:scale-110 transition-transform text-slate-500 group-hover:text-rose-455" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <button id="mobileLogoutBtn" class="flex md:hidden flex-col items-center justify-center gap-0.5 py-1.5 px-2 text-[11px] font-semibold text-slate-400 hover:text-rose-400 transition-all rounded-xl cursor-pointer flex-1 group">
+        <svg class="w-5 h-5 shrink-0 group-hover:scale-110 transition-transform group-hover:text-rose-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
         </svg>
-        <span>Salir</span>
+        <span class="leading-none">Salir</span>
       </button>
 
       <!-- Desktop-only items (Hidden on mobile navigation bar) -->
