@@ -1962,6 +1962,10 @@ async function renderLogistica(container) {
         ['gastos',      'Gastos',      'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z'],
         ['presupuesto', 'Presupuesto', 'M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z'],
         ['caja',        'Caja',        'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z'],
+        ['vehiculos',   'Vehículos',   'M8 17H5a2 2 0 01-2-2V9m2-4h12l2 4v6a2 2 0 01-2 2h-3M9 7h6M9 17h.01M17 17h.01M3 9h18'],
+        ['tareas',      'Tareas',      'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4'],
+        ['actividades', 'Actividades', 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01'],
+        ['alertas',     'Alertas',     'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z'],
       ].map(([id, label, icon]) => `
         <button onclick="campSetTab('${id}')" id="campTab_${id}"
           class="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all
@@ -1999,10 +2003,14 @@ async function campLoadTab() {
   if (!content) return;
   content.innerHTML = `<div class="flex items-center justify-center py-16"><div class="w-7 h-7 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div></div>`;
   try {
-    if (campTab === 'balance')      await campRenderBalance(content);
-    else if (campTab === 'gastos')  await campRenderGastos(content);
-    else if (campTab === 'presupuesto') await campRenderPresupuesto(content);
-    else if (campTab === 'caja')    await campRenderCaja(content);
+    if      (campTab === 'balance')      await campRenderBalance(content);
+    else if (campTab === 'gastos')       await campRenderGastos(content);
+    else if (campTab === 'presupuesto')  await campRenderPresupuesto(content);
+    else if (campTab === 'caja')         await campRenderCaja(content);
+    else if (campTab === 'vehiculos')    await campRenderVehiculos(content);
+    else if (campTab === 'tareas')       await campRenderTareas(content);
+    else if (campTab === 'actividades')  await campRenderActividades(content);
+    else if (campTab === 'alertas')      await campRenderAlertas(content);
   } catch (e) {
     content.innerHTML = `<div class="bg-rose-950/40 border border-rose-800 rounded-2xl p-6 text-rose-400 text-sm text-center">${e.message}</div>`;
   }
@@ -2574,6 +2582,543 @@ window.campAbrirFormCaja = function() {
     } catch (err) { showToast(err.message, 'error'); }
   });
 };
+
+// ─────────────────────── VEHÍCULOS ──────────────────────────────
+async function campRenderVehiculos(container) {
+  const vehiculos = await api.camp.vehiculosCamp();
+  const estadoStyle = {
+    disponible:  'bg-emerald-950/60 text-emerald-400 border border-emerald-800/50',
+    en_ruta:     'bg-blue-950/60 text-blue-400 border border-blue-800/50',
+    sin_combustible: 'bg-amber-950/60 text-amber-400 border border-amber-800/50',
+    en_reparacion: 'bg-red-950/60 text-red-400 border border-red-800/50',
+    inactivo:    'bg-slate-900 text-slate-500 border border-slate-800',
+  };
+
+  container.innerHTML = `
+    <div class="flex items-center justify-between mb-5">
+      <p class="text-xs text-slate-400">${vehiculos.length} vehículo${vehiculos.length !== 1 ? 's' : ''} en la flota</p>
+      <button onclick="campAbrirFormVehiculo()" class="bg-red-600 hover:bg-red-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+        Agregar Vehículo
+      </button>
+    </div>
+
+    ${vehiculos.length ? `
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      ${vehiculos.map(v => {
+        const fuelColor = v.combustible < 20 ? 'bg-red-500' : v.combustible < 50 ? 'bg-amber-500' : 'bg-emerald-500';
+        const st = estadoStyle[v.estado] || estadoStyle.disponible;
+        return `
+        <div class="bg-slate-900/70 border border-slate-800/60 rounded-2xl p-5 group relative">
+          <div class="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button onclick="campEditarVehiculo(${v.id})" class="w-7 h-7 bg-slate-800 hover:bg-slate-700 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-100">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"/></svg>
+            </button>
+            <button onclick="campBorrarVehiculo(${v.id})" class="w-7 h-7 bg-slate-800 hover:bg-red-900/50 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-400">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            </button>
+          </div>
+          <div class="flex items-start gap-3 mb-3">
+            <div class="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center shrink-0">
+              <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 17H5a2 2 0 01-2-2V9m2-4h12l2 4v6a2 2 0 01-2 2h-3M9 7h6M9 17h.01M17 17h.01M3 9h18"/></svg>
+            </div>
+            <div>
+              <h4 class="font-bold text-slate-100 leading-tight">${v.nombre}</h4>
+              <p class="text-[11px] text-slate-500 mt-0.5">${v.modelo || '-'} · Placa: <strong class="text-slate-400">${v.placa || '-'}</strong></p>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-[11px] mb-3">
+            <div><span class="text-slate-600">Chofer:</span> <span class="text-slate-300 font-semibold">${v.chofer || '-'}</span></div>
+            <div><span class="text-slate-600">Tel:</span> <span class="text-slate-300">${v.telefono || '-'}</span></div>
+            <div><span class="text-slate-600">Capacidad:</span> <span class="text-slate-300">${v.capacidad} personas</span></div>
+            <div><span class="text-slate-600">Tareas activas:</span> <span class="font-bold ${parseInt(v.tareas_activas)>0?'text-amber-400':'text-slate-400'}">${v.tareas_activas}</span></div>
+          </div>
+          <div class="mb-3">
+            <div class="flex justify-between text-[10px] mb-1">
+              <span class="text-slate-500 uppercase font-bold">Combustible</span>
+              <span class="font-bold ${v.combustible < 20 ? 'text-red-400' : v.combustible < 50 ? 'text-amber-400' : 'text-emerald-400'}">${v.combustible}%</span>
+            </div>
+            <div class="h-2 bg-slate-800 rounded-full overflow-hidden">
+              <div class="h-full rounded-full transition-all ${fuelColor}" style="width:${v.combustible}%"></div>
+            </div>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-bold px-2.5 py-1 rounded-full ${st}">${v.estado.replace('_',' ').toUpperCase()}</span>
+            <div class="flex gap-1">
+              ${['disponible','en_ruta','sin_combustible','en_reparacion'].map(est => `
+                <button onclick="campCambiarEstadoVehiculo(${v.id},'${est}')" title="${est}"
+                  class="w-6 h-6 rounded-lg ${v.estado===est?'bg-red-600 text-white':'bg-slate-800 hover:bg-slate-700 text-slate-500 hover:text-slate-200'} flex items-center justify-center text-[9px] font-bold transition-all">
+                  ${est==='disponible'?'✓':est==='en_ruta'?'▶':est==='sin_combustible'?'⛽':'🔧'}
+                </button>`).join('')}
+            </div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>` : `
+    <div class="text-center py-16 text-slate-600">
+      <svg class="w-12 h-12 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 17H5a2 2 0 01-2-2V9m2-4h12l2 4v6a2 2 0 01-2 2h-3M9 7h6M9 17h.01M17 17h.01M3 9h18"/></svg>
+      <p class="text-sm font-semibold text-slate-500">Sin vehículos registrados</p>
+      <p class="text-xs text-slate-600 mt-1">Agregá la flota para asignar tareas y actividades</p>
+    </div>`}
+  `;
+  window._campVehiculos = vehiculos;
+}
+
+window.campAbrirFormVehiculo = function(v = {}) {
+  const esEdicion = !!v.id;
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay fixed inset-0 z-50 flex items-end md:items-center justify-center p-4';
+  modal.innerHTML = `
+    <div class="modal-card bg-slate-900 border border-slate-700 rounded-3xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
+      <h3 class="text-base font-bold text-slate-100 mb-5">${esEdicion ? 'Editar Vehículo' : 'Agregar Vehículo'}</h3>
+      <form id="formCampVehiculo" class="space-y-4">
+        ${v.id ? `<input type="hidden" name="id" value="${v.id}">` : ''}
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-400 text-[10px] font-bold uppercase mb-1.5">Nombre / ID</label>
+            <input name="nombre" value="${v.nombre||''}" required placeholder="Ej: Hilux 01"
+              class="w-full bg-slate-950 border border-slate-700 focus:border-red-500 rounded-xl px-3 py-2.5 text-sm text-slate-100 outline-none">
+          </div>
+          <div>
+            <label class="block text-slate-400 text-[10px] font-bold uppercase mb-1.5">Placa</label>
+            <input name="placa" value="${v.placa||''}" placeholder="ABC 123"
+              class="w-full bg-slate-950 border border-slate-700 focus:border-red-500 rounded-xl px-3 py-2.5 text-sm text-slate-100 outline-none">
+          </div>
+        </div>
+        <div>
+          <label class="block text-slate-400 text-[10px] font-bold uppercase mb-1.5">Modelo</label>
+          <input name="modelo" value="${v.modelo||''}" placeholder="Ej: Toyota Hilux 4x4"
+            class="w-full bg-slate-950 border border-slate-700 focus:border-red-500 rounded-xl px-3 py-2.5 text-sm text-slate-100 outline-none">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-400 text-[10px] font-bold uppercase mb-1.5">Chofer</label>
+            <input name="chofer" value="${v.chofer||''}" placeholder="Nombre del chofer"
+              class="w-full bg-slate-950 border border-slate-700 focus:border-red-500 rounded-xl px-3 py-2.5 text-sm text-slate-100 outline-none">
+          </div>
+          <div>
+            <label class="block text-slate-400 text-[10px] font-bold uppercase mb-1.5">Teléfono</label>
+            <input name="telefono" value="${v.telefono||''}" placeholder="0981 123456"
+              class="w-full bg-slate-950 border border-slate-700 focus:border-red-500 rounded-xl px-3 py-2.5 text-sm text-slate-100 outline-none">
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block text-slate-400 text-[10px] font-bold uppercase mb-1.5">Capacidad</label>
+            <input name="capacidad" type="number" value="${v.capacidad||5}" min="1" max="60"
+              class="w-full bg-slate-950 border border-slate-700 focus:border-red-500 rounded-xl px-3 py-2.5 text-sm text-slate-100 outline-none">
+          </div>
+          <div>
+            <label class="block text-slate-400 text-[10px] font-bold uppercase mb-1.5">Combustible %</label>
+            <input name="combustible" type="number" value="${v.combustible||100}" min="0" max="100"
+              class="w-full bg-slate-950 border border-slate-700 focus:border-red-500 rounded-xl px-3 py-2.5 text-sm text-slate-100 outline-none">
+          </div>
+          <div>
+            <label class="block text-slate-400 text-[10px] font-bold uppercase mb-1.5">Estado</label>
+            <select name="estado" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-2 py-2.5 text-xs text-slate-300 outline-none">
+              <option value="disponible" ${v.estado==='disponible'?'selected':''}>Disponible</option>
+              <option value="en_ruta" ${v.estado==='en_ruta'?'selected':''}>En Ruta</option>
+              <option value="sin_combustible" ${v.estado==='sin_combustible'?'selected':''}>Sin Combustible</option>
+              <option value="en_reparacion" ${v.estado==='en_reparacion'?'selected':''}>En Reparación</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-slate-400 text-[10px] font-bold uppercase mb-1.5">Observaciones</label>
+          <input name="observaciones" value="${v.observaciones||''}" placeholder="Notas..."
+            class="w-full bg-slate-950 border border-slate-700 focus:border-red-500 rounded-xl px-3 py-2.5 text-sm text-slate-100 outline-none">
+        </div>
+        <div class="flex gap-3 pt-1">
+          <button type="button" onclick="this.closest('.modal-overlay').remove()" class="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs transition-all">Cancelar</button>
+          <button type="submit" class="flex-1 py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl text-xs shadow-lg transition-all">${esEdicion ? 'Guardar' : 'Agregar'}</button>
+        </div>
+      </form>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.getElementById('formCampVehiculo').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const body = Object.fromEntries(new FormData(ev.target).entries());
+    try {
+      if (esEdicion) { await api.camp.editarVehiculo(v.id, body); showToast('Vehículo actualizado.'); }
+      else           { await api.camp.crearVehiculo(body);         showToast('Vehículo agregado.'); }
+      modal.remove();
+      await campLoadTab();
+    } catch (err) { showToast(err.message, 'error'); }
+  });
+};
+
+window.campEditarVehiculo = async function(id) {
+  const vehiculos = window._campVehiculos || await api.camp.vehiculosCamp();
+  const v = vehiculos.find(x => x.id === id);
+  if (v) campAbrirFormVehiculo(v);
+};
+
+window.campBorrarVehiculo = async function(id) {
+  const ok = await window.confirmarAccion('Eliminar Vehículo', '¿Eliminar este vehículo de la flota?');
+  if (!ok) return;
+  try { await api.camp.borrarVehiculo(id); showToast('Vehículo eliminado.'); await campLoadTab(); }
+  catch (e) { showToast(e.message, 'error'); }
+};
+
+window.campCambiarEstadoVehiculo = async function(id, estado) {
+  try { await api.camp.editarVehiculo(id, { estado }); await campLoadTab(); }
+  catch (e) { showToast(e.message, 'error'); }
+};
+
+// ─────────────────────── TAREAS ──────────────────────────────────
+async function campRenderTareas(container) {
+  const [tareas, vehiculos] = await Promise.all([api.camp.tareas(), api.camp.vehiculosCamp()]);
+  window._campVehiculos = vehiculos;
+
+  const pendientes   = tareas.filter(t => t.estado === 'pendiente');
+  const enCamino     = tareas.filter(t => t.estado === 'en_camino');
+  const completadas  = tareas.filter(t => t.estado === 'completado');
+
+  const prioStyle = { urgente: 'bg-red-900/60 text-red-400 border-red-800/60', alta: 'bg-amber-900/60 text-amber-400 border-amber-800/60', normal: 'bg-slate-800 text-slate-400 border-slate-700' };
+
+  const tarjeta = (t) => `
+    <div class="bg-slate-950 border border-slate-800/80 rounded-xl p-3.5 group">
+      <div class="flex items-start justify-between gap-2 mb-2">
+        <p class="text-xs font-bold text-slate-100 leading-tight flex-1">${t.titulo}</p>
+        <span class="text-[9px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${prioStyle[t.prioridad]||prioStyle.normal}">${t.prioridad?.toUpperCase()}</span>
+      </div>
+      ${t.descripcion ? `<p class="text-[10px] text-slate-500 mb-2 line-clamp-2">${t.descripcion}</p>` : ''}
+      <div class="text-[10px] text-slate-600 space-y-0.5">
+        ${t.tipo ? `<p>📌 ${t.tipo}</p>` : ''}
+        ${t.asignado_nombre ? `<p>👤 ${t.asignado_nombre}</p>` : ''}
+        ${t.vehiculo_nombre ? `<p>🚗 ${t.vehiculo_nombre}${t.vehiculo_placa?' ('+t.vehiculo_placa+')':''}</p>` : ''}
+        ${t.tiempo_estimado ? `<p>⏱ ${t.tiempo_estimado} min</p>` : ''}
+      </div>
+      <div class="flex gap-1 mt-2.5 flex-wrap">
+        ${t.estado !== 'pendiente'  ? `<button onclick="campMoverTarea(${t.id},'pendiente')"   class="text-[9px] font-bold px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-lg transition-all">← Pendiente</button>` : ''}
+        ${t.estado !== 'en_camino'  ? `<button onclick="campMoverTarea(${t.id},'en_camino')"   class="text-[9px] font-bold px-2 py-1 bg-blue-900/60 hover:bg-blue-800/60 text-blue-400 rounded-lg transition-all">▶ En Camino</button>` : ''}
+        ${t.estado !== 'completado' ? `<button onclick="campMoverTarea(${t.id},'completado')"  class="text-[9px] font-bold px-2 py-1 bg-emerald-900/60 hover:bg-emerald-800/60 text-emerald-400 rounded-lg transition-all">✓ Completar</button>` : ''}
+        <button onclick="campEliminarTarea(${t.id})" class="ml-auto text-[9px] font-bold px-2 py-1 bg-slate-900 hover:bg-red-900/40 text-slate-600 hover:text-red-400 rounded-lg transition-all">✕</button>
+      </div>
+    </div>`;
+
+  container.innerHTML = `
+    <div class="flex items-center justify-between mb-5">
+      <p class="text-xs text-slate-400">${tareas.length} tarea${tareas.length !== 1 ? 's' : ''} en total</p>
+      <button onclick="campAbrirFormTarea()" class="bg-red-600 hover:bg-red-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+        Nueva Tarea
+      </button>
+    </div>
+
+    <!-- Kanban 3 columnas -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="bg-slate-900/50 border border-slate-800/50 rounded-2xl p-4">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="w-2.5 h-2.5 rounded-full bg-slate-500"></span>
+          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Pendiente</span>
+          <span class="ml-auto text-xs font-bold bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full">${pendientes.length}</span>
+        </div>
+        <div class="space-y-2.5">
+          ${pendientes.length ? pendientes.map(tarjeta).join('') : '<p class="text-[11px] text-slate-600 text-center py-4">Sin tareas pendientes</p>'}
+        </div>
+      </div>
+      <div class="bg-blue-950/20 border border-blue-900/30 rounded-2xl p-4">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse"></span>
+          <span class="text-xs font-bold text-blue-400 uppercase tracking-wider">En Camino</span>
+          <span class="ml-auto text-xs font-bold bg-blue-950/60 text-blue-400 px-2 py-0.5 rounded-full">${enCamino.length}</span>
+        </div>
+        <div class="space-y-2.5">
+          ${enCamino.length ? enCamino.map(tarjeta).join('') : '<p class="text-[11px] text-slate-600 text-center py-4">Ninguna en curso</p>'}
+        </div>
+      </div>
+      <div class="bg-emerald-950/20 border border-emerald-900/30 rounded-2xl p-4">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+          <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider">Completado</span>
+          <span class="ml-auto text-xs font-bold bg-emerald-950/60 text-emerald-400 px-2 py-0.5 rounded-full">${completadas.length}</span>
+        </div>
+        <div class="space-y-2.5">
+          ${completadas.length ? completadas.map(tarjeta).join('') : '<p class="text-[11px] text-slate-600 text-center py-4">Ninguna completada aún</p>'}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+window.campMoverTarea = async function(id, estado) {
+  try { await api.camp.actualizarTarea(id, { estado }); await campLoadTab(); }
+  catch (e) { showToast(e.message, 'error'); }
+};
+window.campEliminarTarea = async function(id) {
+  const ok = await window.confirmarAccion('Eliminar Tarea', '¿Eliminar esta tarea?');
+  if (!ok) return;
+  try { await api.camp.borrarTarea(id); showToast('Tarea eliminada.'); await campLoadTab(); }
+  catch (e) { showToast(e.message, 'error'); }
+};
+
+window.campAbrirFormTarea = function() {
+  const vehiculos = window._campVehiculos || [];
+  const TIPOS_TAREA = [
+    'Buscar votantes','Llevar personas al local','Traslado de adultos mayores',
+    'Traslado de coordinadores','Reparto de materiales','Transporte de veedores',
+    'Carga de combustible','Reparación de vehículo','Compra de agua/alimentos',
+    'Impresión de padrones','Instalación de carpas','Supervisión de mesas',
+    'Coordinación territorial','Resolución de incidentes','Otro'
+  ];
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay fixed inset-0 z-50 flex items-end md:items-center justify-center p-4';
+  modal.innerHTML = `
+    <div class="modal-card bg-slate-900 border border-slate-700 rounded-3xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
+      <h3 class="text-base font-bold text-slate-100 mb-5">Nueva Tarea</h3>
+      <form id="formCampTarea" class="space-y-4">
+        <div>
+          <label class="block text-slate-400 text-[10px] font-bold uppercase mb-1.5">Título de la Tarea</label>
+          <input name="titulo" required placeholder="Ej: Buscar 15 votantes en Barrio San Miguel"
+            class="w-full bg-slate-950 border border-slate-700 focus:border-red-500 rounded-xl px-3 py-2.5 text-sm text-slate-100 outline-none">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-400 text-[10px] font-bold uppercase mb-1.5">Tipo de Actividad</label>
+            <select name="tipo" class="w-full bg-slate-950 border border-slate-700 focus:border-red-500 rounded-xl px-3 py-2.5 text-xs text-slate-300 outline-none">
+              <option value="">Sin tipo</option>
+              ${TIPOS_TAREA.map(t => `<option value="${t}">${t}</option>`).join('')}
+            </select>
+          </div>
+          <div>
+            <label class="block text-slate-400 text-[10px] font-bold uppercase mb-1.5">Prioridad</label>
+            <select name="prioridad" class="w-full bg-slate-950 border border-slate-700 focus:border-red-500 rounded-xl px-3 py-2.5 text-xs text-slate-300 outline-none">
+              <option value="normal">Normal</option>
+              <option value="alta">Alta</option>
+              <option value="urgente">Urgente</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-400 text-[10px] font-bold uppercase mb-1.5">Asignado a</label>
+            <input name="asignado_nombre" placeholder="Nombre del coordinador"
+              class="w-full bg-slate-950 border border-slate-700 focus:border-red-500 rounded-xl px-3 py-2.5 text-sm text-slate-100 outline-none">
+          </div>
+          <div>
+            <label class="block text-slate-400 text-[10px] font-bold uppercase mb-1.5">Tiempo Est. (min)</label>
+            <input name="tiempo_estimado" type="number" min="1" placeholder="20"
+              class="w-full bg-slate-950 border border-slate-700 focus:border-red-500 rounded-xl px-3 py-2.5 text-sm text-slate-100 outline-none">
+          </div>
+        </div>
+        <div>
+          <label class="block text-slate-400 text-[10px] font-bold uppercase mb-1.5">Vehículo Asignado</label>
+          <select name="vehiculo_id" class="w-full bg-slate-950 border border-slate-700 focus:border-red-500 rounded-xl px-3 py-2.5 text-xs text-slate-300 outline-none">
+            <option value="">Sin vehículo</option>
+            ${vehiculos.map(v => `<option value="${v.id}">${v.nombre}${v.placa?' ('+v.placa+')':''} — ${v.chofer||'Sin chofer'}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label class="block text-slate-400 text-[10px] font-bold uppercase mb-1.5">Descripción</label>
+          <textarea name="descripcion" rows="2" placeholder="Detalles de la tarea..."
+            class="w-full bg-slate-950 border border-slate-700 focus:border-red-500 rounded-xl px-3 py-2 text-sm text-slate-100 outline-none resize-none placeholder-slate-700"></textarea>
+        </div>
+        <div class="flex gap-3 pt-1">
+          <button type="button" onclick="this.closest('.modal-overlay').remove()" class="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs transition-all">Cancelar</button>
+          <button type="submit" class="flex-1 py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl text-xs shadow-lg transition-all">Crear Tarea</button>
+        </div>
+      </form>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.getElementById('formCampTarea').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const body = Object.fromEntries(new FormData(ev.target).entries());
+    try { await api.camp.crearTarea(body); showToast('Tarea creada.'); modal.remove(); await campLoadTab(); }
+    catch (err) { showToast(err.message, 'error'); }
+  });
+};
+
+// ─────────────────────── ACTIVIDADES ─────────────────────────────
+const ACT_CATEGORIAS = {
+  movilizacion: { label: 'Movilización', color: 'text-blue-400', tipos: ['Buscar votantes','Llevar personas al local','Traslado de adultos mayores','Traslado de coordinadores','Reparto de materiales','Transporte de veedores','Transporte de comida','Reubicación logística'] },
+  operativa:    { label: 'Operativa',    color: 'text-amber-400', tipos: ['Carga de combustible','Reparación de vehículo','Cambio de chofer','Compra de agua/alimentos','Impresión de padrones','Instalación de carpas','Instalación de equipos'] },
+  electoral:    { label: 'Electoral',    color: 'text-emerald-400', tipos: ['Supervisión de mesas','Reporte de participación','Control de veedores','Monitoreo de locales','Resolución de incidentes','Coordinación territorial'] },
+};
+
+async function campRenderActividades(container) {
+  const [actividades, vehiculos] = await Promise.all([api.camp.actividades(), api.camp.vehiculosCamp()]);
+  window._campVehiculos = vehiculos;
+
+  const catBadge = { movilizacion: 'bg-blue-950/60 text-blue-400 border-blue-800/50', operativa: 'bg-amber-950/60 text-amber-400 border-amber-800/50', electoral: 'bg-emerald-950/60 text-emerald-400 border-emerald-800/50' };
+
+  container.innerHTML = `
+    <div class="flex items-center justify-between mb-5">
+      <p class="text-xs text-slate-400">${actividades.length} actividad${actividades.length !== 1 ? 'es' : ''} registrada${actividades.length !== 1 ? 's' : ''}</p>
+      <button onclick="campAbrirFormActividad()" class="bg-red-600 hover:bg-red-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+        Registrar Actividad
+      </button>
+    </div>
+
+    <div class="space-y-2.5">
+      ${actividades.length ? actividades.map(a => `
+        <div class="bg-slate-900/70 border border-slate-800/60 rounded-2xl p-4 flex flex-wrap items-start gap-3">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap mb-1">
+              <span class="text-sm font-bold text-slate-100">${a.tipo}</span>
+              ${a.categoria ? `<span class="text-[9px] font-bold px-2 py-0.5 rounded-full border ${catBadge[a.categoria]||'bg-slate-800 text-slate-400 border-slate-700'}">${ACT_CATEGORIAS[a.categoria]?.label||a.categoria}</span>` : ''}
+            </div>
+            ${a.descripcion ? `<p class="text-xs text-slate-400 mb-1">${a.descripcion}</p>` : ''}
+            <div class="flex gap-3 flex-wrap text-[10px] text-slate-500">
+              <span>👤 ${a.responsable_nombre||'-'}</span>
+              ${a.vehiculo_nombre ? `<span>🚗 ${a.vehiculo_nombre}</span>` : ''}
+              <span>📅 ${a.fecha ? new Date(a.fecha).toLocaleString('es-PY',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '-'}</span>
+              ${a.lat ? `<span>📍 GPS</span>` : ''}
+            </div>
+          </div>
+          <button onclick="campEliminarActividad(${a.id})" class="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-red-900/50 text-slate-500 hover:text-red-400 transition-colors shrink-0">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+          </button>
+        </div>`).join('') : `
+      <div class="text-center py-16 text-slate-600">
+        <svg class="w-10 h-10 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+        <p class="text-sm font-semibold text-slate-500">Sin actividades registradas</p>
+      </div>`}
+    </div>
+  `;
+}
+
+window.campAbrirFormActividad = function() {
+  const vehiculos = window._campVehiculos || [];
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay fixed inset-0 z-50 flex items-end md:items-center justify-center p-4';
+  modal.innerHTML = `
+    <div class="modal-card bg-slate-900 border border-slate-700 rounded-3xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
+      <h3 class="text-base font-bold text-slate-100 mb-5">Registrar Actividad</h3>
+      <form id="formCampActividad" class="space-y-4">
+        <div>
+          <label class="block text-slate-400 text-[10px] font-bold uppercase mb-1.5">Categoría</label>
+          <select id="actCatSelect" name="categoria" onchange="campActualizarTipos()" class="w-full bg-slate-950 border border-slate-700 focus:border-red-500 rounded-xl px-3 py-2.5 text-xs text-slate-300 outline-none">
+            <option value="">Seleccionar categoría...</option>
+            ${Object.entries(ACT_CATEGORIAS).map(([k,v])=>`<option value="${k}">${v.label}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label class="block text-slate-400 text-[10px] font-bold uppercase mb-1.5">Tipo de Actividad</label>
+          <select id="actTipoSelect" name="tipo" required class="w-full bg-slate-950 border border-slate-700 focus:border-red-500 rounded-xl px-3 py-2.5 text-xs text-slate-300 outline-none">
+            <option value="">Seleccioná primero la categoría</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-slate-400 text-[10px] font-bold uppercase mb-1.5">Vehículo (opcional)</label>
+          <select name="vehiculo_id" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-300 outline-none">
+            <option value="">Sin vehículo</option>
+            ${vehiculos.map(v=>`<option value="${v.id}">${v.nombre}${v.placa?' ('+v.placa+')':''}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label class="block text-slate-400 text-[10px] font-bold uppercase mb-1.5">Descripción</label>
+          <textarea name="descripcion" rows="2" placeholder="Detalle de la actividad..."
+            class="w-full bg-slate-950 border border-slate-700 focus:border-red-500 rounded-xl px-3 py-2 text-sm text-slate-100 outline-none resize-none placeholder-slate-700"></textarea>
+        </div>
+        <div class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 flex items-center justify-between text-xs">
+          <div>
+            <p class="font-bold text-slate-400 text-[10px] uppercase">GPS (opcional)</p>
+            <p id="gpsActCamp" class="text-[10px] text-slate-600 mt-0.5">No capturado</p>
+          </div>
+          <input type="hidden" name="lat"><input type="hidden" name="lng">
+          <button type="button" onclick="campCapturarGPSActividad()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-semibold px-3 py-1.5 rounded-lg text-[10px] active:scale-95 transition-all">GPS</button>
+        </div>
+        <div class="flex gap-3 pt-1">
+          <button type="button" onclick="this.closest('.modal-overlay').remove()" class="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs transition-all">Cancelar</button>
+          <button type="submit" class="flex-1 py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl text-xs shadow-lg transition-all">Registrar</button>
+        </div>
+      </form>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.getElementById('formCampActividad').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const body = Object.fromEntries(new FormData(ev.target).entries());
+    if (!body.tipo) return showToast('Seleccioná el tipo de actividad', 'warning');
+    try { await api.camp.crearActividad(body); showToast('Actividad registrada.'); modal.remove(); await campLoadTab(); }
+    catch (err) { showToast(err.message, 'error'); }
+  });
+};
+
+window.campActualizarTipos = function() {
+  const cat = document.getElementById('actCatSelect')?.value;
+  const sel = document.getElementById('actTipoSelect');
+  if (!sel) return;
+  const tipos = ACT_CATEGORIAS[cat]?.tipos || [];
+  sel.innerHTML = tipos.length
+    ? tipos.map(t => `<option value="${t}">${t}</option>`).join('')
+    : '<option value="">Seleccioná primero la categoría</option>';
+};
+
+window.campCapturarGPSActividad = function() {
+  navigator.geolocation?.getCurrentPosition(pos => {
+    const form = document.getElementById('formCampActividad');
+    if (form) { form.lat.value = pos.coords.latitude.toFixed(6); form.lng.value = pos.coords.longitude.toFixed(6); }
+    const el = document.getElementById('gpsActCamp');
+    if (el) el.textContent = `${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`;
+  }, () => showToast('No se pudo obtener ubicación', 'warning'));
+};
+
+window.campEliminarActividad = async function(id) {
+  const ok = await window.confirmarAccion('Eliminar Actividad', '¿Eliminar este registro de actividad?');
+  if (!ok) return;
+  try { await api.camp.borrarActividad(id); showToast('Actividad eliminada.'); await campLoadTab(); }
+  catch (e) { showToast(e.message, 'error'); }
+};
+
+// ─────────────────────── ALERTAS ─────────────────────────────────
+async function campRenderAlertas(container) {
+  const alertas = await api.camp.alertas();
+  const nivelStyle = {
+    critico: { bg: 'bg-red-950/60 border-red-800/60',    icon: 'text-red-400',    badge: 'bg-red-600' },
+    alto:    { bg: 'bg-amber-950/60 border-amber-800/60', icon: 'text-amber-400',  badge: 'bg-amber-500' },
+    medio:   { bg: 'bg-blue-950/60 border-blue-800/60',   icon: 'text-blue-400',   badge: 'bg-blue-500' },
+  };
+  const tipoIcon = { presupuesto: '💰', vehiculo: '🚗', gasto: '💸', tarea: '✅' };
+
+  container.innerHTML = `
+    <div class="flex items-center gap-3 mb-5">
+      ${alertas.length > 0
+        ? `<div class="w-8 h-8 rounded-xl bg-red-600 flex items-center justify-center font-extrabold text-white text-sm">${alertas.length}</div>`
+        : `<div class="w-8 h-8 rounded-xl bg-emerald-900/60 flex items-center justify-center text-emerald-400"><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>`}
+      <div>
+        <p class="text-sm font-bold text-slate-100">${alertas.length > 0 ? `${alertas.length} alerta${alertas.length !== 1 ? 's' : ''} activa${alertas.length !== 1 ? 's' : ''}` : 'Todo en orden'}</p>
+        <p class="text-[10px] text-slate-500">Monitoreo automático de presupuesto, vehículos y tareas</p>
+      </div>
+      <button onclick="campLoadTab()" class="ml-auto text-xs text-slate-400 hover:text-slate-100 bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-xl transition-all font-semibold">↻ Actualizar</button>
+    </div>
+
+    <div class="space-y-3">
+      ${alertas.length ? alertas.map(a => {
+        const st = nivelStyle[a.nivel] || nivelStyle.medio;
+        return `
+        <div class="border ${st.bg} rounded-2xl p-4 flex items-start gap-3">
+          <span class="text-xl shrink-0">${tipoIcon[a.tipo]||'⚠️'}</span>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-0.5">
+              <p class="text-sm font-bold text-slate-100">${a.mensaje}</p>
+              <span class="text-[8px] font-extrabold px-2 py-0.5 rounded-full text-white uppercase shrink-0 ${st.badge}">${a.nivel}</span>
+            </div>
+            <p class="text-xs text-slate-400">${a.detalle}</p>
+          </div>
+        </div>`;
+      }).join('') : `
+      <div class="bg-emerald-950/30 border border-emerald-900/40 rounded-2xl p-8 text-center">
+        <svg class="w-12 h-12 mx-auto mb-3 text-emerald-500 opacity-60" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/></svg>
+        <p class="text-sm font-semibold text-emerald-400">Sin alertas activas</p>
+        <p class="text-xs text-slate-500 mt-1">El presupuesto y la flota están dentro de los límites normales</p>
+      </div>`}
+    </div>
+
+    <div class="mt-5 bg-slate-900/60 border border-slate-800/50 rounded-2xl p-4">
+      <p class="text-[10px] text-slate-500 font-bold uppercase mb-2 tracking-wider">Condiciones de alerta</p>
+      <ul class="text-[10px] text-slate-500 space-y-1">
+        <li>🔴 <strong class="text-slate-400">Crítico:</strong> Rubro de presupuesto agotado (100%), combustible &lt;10%</li>
+        <li>🟠 <strong class="text-slate-400">Alto:</strong> Rubro ≥90%, combustible &lt;25%, tarea urgente &gt;2h sin iniciar</li>
+        <li>🔵 <strong class="text-slate-400">Medio:</strong> Rubro ≥75%, gasto individual &gt;Gs. 5.000.000 en últimas 24h</li>
+      </ul>
+    </div>
+  `;
+}
 
 // ===================== EMERGENCIA =====================
 async function renderEmergencia(container) {

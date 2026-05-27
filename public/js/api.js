@@ -87,6 +87,22 @@ const api = {
     caja:               ()       => apiFetch('/logistica/caja'),
     crearMovCaja:       (body)   => apiFetch('/logistica/caja',             { method: 'POST',   body }),
     borrarMovCaja:      (id)     => apiFetch('/logistica/caja/'+id,         { method: 'DELETE' }),
+    // Vehículos de campaña
+    vehiculosCamp:      ()       => apiFetch('/logistica/vehiculos-camp'),
+    crearVehiculo:      (body)   => apiFetch('/logistica/vehiculos-camp',    { method: 'POST',   body }),
+    editarVehiculo:     (id, b)  => apiFetch('/logistica/vehiculos-camp/'+id,{ method: 'PUT',    body: b }),
+    borrarVehiculo:     (id)     => apiFetch('/logistica/vehiculos-camp/'+id,{ method: 'DELETE' }),
+    // Tareas
+    tareas:             (p = {}) => apiFetch('/logistica/tareas?' + new URLSearchParams(p)),
+    crearTarea:         (body)   => apiFetch('/logistica/tareas',            { method: 'POST',   body }),
+    actualizarTarea:    (id, b)  => apiFetch('/logistica/tareas/'+id,        { method: 'PUT',    body: b }),
+    borrarTarea:        (id)     => apiFetch('/logistica/tareas/'+id,        { method: 'DELETE' }),
+    // Actividades
+    actividades:        ()       => apiFetch('/logistica/actividades'),
+    crearActividad:     (body)   => apiFetch('/logistica/actividades',       { method: 'POST',   body }),
+    borrarActividad:    (id)     => apiFetch('/logistica/actividades/'+id,   { method: 'DELETE' }),
+    // Alertas
+    alertas:            ()       => apiFetch('/logistica/alertas'),
   },
   incidencias: () => apiFetch('/incidencias'),
   crearIncidencia: (body) => apiFetch('/incidencias', { method: 'POST', body }),

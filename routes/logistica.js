@@ -49,6 +49,53 @@ async function ensureTables(db) {
       observaciones        TEXT
     )
   `);
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS camp_vehiculos (
+      id           SERIAL PRIMARY KEY,
+      nombre       VARCHAR(120) NOT NULL,
+      placa        VARCHAR(30),
+      modelo       VARCHAR(100),
+      chofer       VARCHAR(200),
+      telefono     VARCHAR(30),
+      capacidad    INTEGER DEFAULT 5,
+      combustible  INTEGER DEFAULT 100,
+      estado       VARCHAR(20) DEFAULT 'disponible',
+      observaciones TEXT,
+      activo       BOOLEAN DEFAULT TRUE,
+      created_at   TIMESTAMP DEFAULT NOW()
+    )
+  `);
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS camp_tareas (
+      id                SERIAL PRIMARY KEY,
+      titulo            VARCHAR(200) NOT NULL,
+      descripcion       TEXT,
+      tipo              VARCHAR(80),
+      asignado_nombre   VARCHAR(200),
+      vehiculo_id       INTEGER REFERENCES camp_vehiculos(id) ON DELETE SET NULL,
+      estado            VARCHAR(20) DEFAULT 'pendiente',
+      prioridad         VARCHAR(20) DEFAULT 'normal',
+      tiempo_estimado   INTEGER,
+      created_by        INTEGER,
+      created_at        TIMESTAMP DEFAULT NOW(),
+      updated_at        TIMESTAMP DEFAULT NOW()
+    )
+  `);
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS camp_actividades (
+      id                 SERIAL PRIMARY KEY,
+      tipo               VARCHAR(80) NOT NULL,
+      descripcion        TEXT,
+      categoria          VARCHAR(50),
+      vehiculo_id        INTEGER REFERENCES camp_vehiculos(id) ON DELETE SET NULL,
+      responsable_id     INTEGER,
+      responsable_nombre VARCHAR(200),
+      lat                DECIMAL(10,6),
+      lng                DECIMAL(10,6),
+      fecha              TIMESTAMP DEFAULT NOW(),
+      created_at         TIMESTAMP DEFAULT NOW()
+    )
+  `);
   tablesReady = true;
 }
 
@@ -227,6 +274,181 @@ router.get('/balance', checkPermiso('logistica'), async (req, res) => {
       caja:              cajaRows[0] || { ingresos: 0, egresos: 0 },
       recientes:         recientesRows
     });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── VEHÍCULOS DE CAMPAÑA ─────────────────────────────────────────
+router.get('/vehiculos-camp', checkPermiso('logistica'), async (req, res) => {
+  try {
+    const [rows] = await req.db.query(`
+      SELECT v.*,
+        (SELECT COUNT(*) FROM camp_tareas t WHERE t.vehiculo_id = v.id AND t.estado != 'completado') AS tareas_activas
+      FROM camp_vehiculos v WHERE v.activo = TRUE ORDER BY v.id ASC
+    `);
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.post('/vehiculos-camp', checkPermiso('logistica'), async (req, res) => {
+  const { nombre, placa, modelo, chofer, telefono, capacidad, combustible, estado, observaciones } = req.body;
+  if (!nombre) return res.status(400).json({ error: 'El nombre del vehículo es obligatorio' });
+  try {
+    const [r] = await req.db.query(
+      `INSERT INTO camp_vehiculos (nombre, placa, modelo, chofer, telefono, capacidad, combustible, estado, observaciones)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [nombre, placa||null, modelo||null, chofer||null, telefono||null,
+       parseInt(capacidad)||5, parseInt(combustible)||100, estado||'disponible', observaciones||null]
+    );
+    res.json({ id: r.insertId, success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.put('/vehiculos-camp/:id', checkPermiso('logistica'), async (req, res) => {
+  const { nombre, placa, modelo, chofer, telefono, capacidad, combustible, estado, observaciones } = req.body;
+  try {
+    await req.db.query(
+      `UPDATE camp_vehiculos SET nombre=?, placa=?, modelo=?, chofer=?, telefono=?,
+       capacidad=?, combustible=?, estado=?, observaciones=? WHERE id=?`,
+      [nombre, placa||null, modelo||null, chofer||null, telefono||null,
+       parseInt(capacidad)||5, parseInt(combustible)||100, estado||'disponible',
+       observaciones||null, req.params.id]
+    );
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.delete('/vehiculos-camp/:id', checkPermiso('logistica'), async (req, res) => {
+  try {
+    await req.db.query('UPDATE camp_vehiculos SET activo = FALSE WHERE id = ?', [req.params.id]);
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── TAREAS ────────────────────────────────────────────────────────
+router.get('/tareas', checkPermiso('logistica'), async (req, res) => {
+  const { estado } = req.query;
+  try {
+    let sql = `
+      SELECT t.*, v.nombre AS vehiculo_nombre, v.placa AS vehiculo_placa, v.chofer AS vehiculo_chofer
+      FROM camp_tareas t LEFT JOIN camp_vehiculos v ON t.vehiculo_id = v.id WHERE 1=1
+    `;
+    const params = [];
+    if (estado) { sql += ' AND t.estado = ?'; params.push(estado); }
+    sql += ' ORDER BY t.created_at DESC';
+    const [rows] = await req.db.query(sql, params);
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.post('/tareas', checkPermiso('logistica'), async (req, res) => {
+  const { titulo, descripcion, tipo, asignado_nombre, vehiculo_id, prioridad, tiempo_estimado } = req.body;
+  if (!titulo) return res.status(400).json({ error: 'El título es obligatorio' });
+  try {
+    const [r] = await req.db.query(
+      `INSERT INTO camp_tareas (titulo, descripcion, tipo, asignado_nombre, vehiculo_id, prioridad, tiempo_estimado, created_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [titulo, descripcion||null, tipo||null, asignado_nombre||null,
+       vehiculo_id ? parseInt(vehiculo_id) : null, prioridad||'normal',
+       tiempo_estimado ? parseInt(tiempo_estimado) : null, req.user.id]
+    );
+    res.json({ id: r.insertId, success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.put('/tareas/:id', checkPermiso('logistica'), async (req, res) => {
+  const allowed = ['titulo','descripcion','tipo','asignado_nombre','vehiculo_id','estado','prioridad','tiempo_estimado'];
+  const updates = [];
+  const vals = [];
+  allowed.forEach(k => {
+    if (req.body[k] !== undefined) { updates.push(`${k}=?`); vals.push(req.body[k]); }
+  });
+  if (!updates.length) return res.status(400).json({ error: 'Nada que actualizar' });
+  updates.push('updated_at=NOW()');
+  vals.push(req.params.id);
+  try {
+    await req.db.query(`UPDATE camp_tareas SET ${updates.join(',')} WHERE id=?`, vals);
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.delete('/tareas/:id', checkPermiso('logistica'), async (req, res) => {
+  try {
+    await req.db.query('DELETE FROM camp_tareas WHERE id = ?', [req.params.id]);
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── ACTIVIDADES ───────────────────────────────────────────────────
+router.get('/actividades', checkPermiso('logistica'), async (req, res) => {
+  try {
+    const [rows] = await req.db.query(`
+      SELECT a.*, v.nombre AS vehiculo_nombre, v.placa AS vehiculo_placa
+      FROM camp_actividades a LEFT JOIN camp_vehiculos v ON a.vehiculo_id = v.id
+      ORDER BY a.created_at DESC LIMIT 100
+    `);
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.post('/actividades', checkPermiso('logistica'), async (req, res) => {
+  const { tipo, descripcion, categoria, vehiculo_id, lat, lng } = req.body;
+  if (!tipo) return res.status(400).json({ error: 'El tipo de actividad es obligatorio' });
+  try {
+    const [r] = await req.db.query(
+      `INSERT INTO camp_actividades (tipo, descripcion, categoria, vehiculo_id, responsable_id, responsable_nombre, lat, lng)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [tipo, descripcion||null, categoria||null,
+       vehiculo_id ? parseInt(vehiculo_id) : null,
+       req.user.id, req.user.nombre || req.user.email,
+       lat||null, lng||null]
+    );
+    res.json({ id: r.insertId, success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.delete('/actividades/:id', checkPermiso('logistica'), async (req, res) => {
+  try {
+    await req.db.query('DELETE FROM camp_actividades WHERE id = ?', [req.params.id]);
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── ALERTAS ────────────────────────────────────────────────────────
+router.get('/alertas', checkPermiso('logistica'), async (req, res) => {
+  try {
+    const alertas = [];
+    // 1. Presupuestos cerca del límite
+    const [presupuestos] = await req.db.query(`
+      SELECT p.*, COALESCE((SELECT SUM(g.monto) FROM camp_gastos g WHERE g.presupuesto_id=p.id),0) AS gastado
+      FROM camp_presupuestos p WHERE p.activo=TRUE
+    `);
+    for (const p of presupuestos) {
+      const pct = p.monto_total > 0 ? parseInt(p.gastado) / parseInt(p.monto_total) * 100 : 0;
+      if (pct >= 100) alertas.push({ nivel: 'critico', tipo: 'presupuesto', mensaje: `Rubro "${p.nombre}" AGOTADO`, detalle: `Gastado: ${parseInt(p.gastado).toLocaleString('es-PY')} Gs.` });
+      else if (pct >= 90) alertas.push({ nivel: 'alto', tipo: 'presupuesto', mensaje: `Rubro "${p.nombre}" al ${Math.round(pct)}%`, detalle: 'Quedan menos del 10% de fondos' });
+      else if (pct >= 75) alertas.push({ nivel: 'medio', tipo: 'presupuesto', mensaje: `Rubro "${p.nombre}" al ${Math.round(pct)}%`, detalle: 'Monitorear el gasto' });
+    }
+    // 2. Vehículos con combustible bajo
+    const [vehiculos] = await req.db.query(`SELECT * FROM camp_vehiculos WHERE activo=TRUE AND combustible < 25`);
+    for (const v of vehiculos) {
+      alertas.push({ nivel: v.combustible < 10 ? 'critico' : 'alto', tipo: 'vehiculo', mensaje: `Combustible bajo: ${v.nombre}`, detalle: `${v.combustible}% — Chofer: ${v.chofer||'-'}` });
+    }
+    // 3. Gastos inusualmente altos (> Gs. 5.000.000 en una sola carga)
+    const [gastosAltos] = await req.db.query(`
+      SELECT * FROM camp_gastos WHERE monto > 5000000 AND created_at > NOW() - INTERVAL '24 hours'
+      ORDER BY monto DESC LIMIT 5
+    `);
+    for (const g of gastosAltos) {
+      alertas.push({ nivel: 'medio', tipo: 'gasto', mensaje: `Gasto alto: ${g.categoria}`, detalle: `${parseInt(g.monto).toLocaleString('es-PY')} Gs. — ${g.responsable_nombre||'-'}` });
+    }
+    // 4. Tareas atrasadas (más de 2 horas en estado pendiente)
+    const [tareasAtr] = await req.db.query(`
+      SELECT * FROM camp_tareas WHERE estado='pendiente' AND prioridad='urgente' AND created_at < NOW() - INTERVAL '2 hours'
+    `);
+    for (const t of tareasAtr) {
+      alertas.push({ nivel: 'alto', tipo: 'tarea', mensaje: `Tarea urgente sin iniciar: "${t.titulo}"`, detalle: `Asignado: ${t.asignado_nombre||'Sin asignar'}` });
+    }
+    res.json(alertas);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
