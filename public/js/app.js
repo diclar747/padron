@@ -1056,17 +1056,28 @@ window.filtrarElectores = function(immediate = false) {
 
 // Filtro local dentro de la mesa ya cargada (sin nueva llamada al servidor)
 window.filtrarMesaLocal = function() {
-  const q = (document.getElementById('buscarEnMesa')?.value || '').trim().toLowerCase();
+  const q = (document.getElementById('buscarEnMesa')?.value || '').trim();
   if (!allElectores.length) return;
 
-  const filtered = q
-    ? allElectores.filter(e => {
-        const nombre  = (e.nombre  || '').toLowerCase();
-        const ci      = String(e.ci     || '').toLowerCase();
-        const orden   = String(e.orden  || '').toLowerCase();
-        return nombre.includes(q) || ci.includes(q) || orden === q;
-      })
-    : allElectores;
+  if (!q) {
+    renderListaElectores(allElectores);
+    return;
+  }
+
+  const isNumeric = /^\d+$/.test(q);
+  const qLower    = q.toLowerCase();
+
+  const filtered = allElectores.filter(e => {
+    if (isNumeric) {
+      // Numérico → exacto: orden O cédula completa
+      const ci    = String(e.ci    || '').trim();
+      const orden = String(e.orden || '').trim();
+      return ci === q || orden === q;
+    } else {
+      // Texto → parcial por nombre
+      return (e.nombre || '').toLowerCase().includes(qLower);
+    }
+  });
 
   renderListaElectores(filtered);
 };
