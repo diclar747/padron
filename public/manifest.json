@@ -1,21 +1,25 @@
 {
   "name": "Padrón Electoral ANR",
   "short_name": "Padrón ANR",
-  "start_url": "/index.html",
+  "description": "Consulta tu lugar de votación - Asociación Nacional Republicana",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#dc2626",
   "orientation": "portrait-primary",
+  "scope": "/",
   "icons": [
     {
       "src": "/icons/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
       "src": "/icons/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
