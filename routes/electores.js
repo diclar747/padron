@@ -115,7 +115,7 @@ router.get('/', authMiddleware, (req, res, next) => {
     params.push(searchParam, searchParam, searchParam);
   }
   
-  sql += ' ORDER BY e.APELLIDO, e.NOMBRE LIMIT 500'; // Limit results for performance on large databases
+  sql += ' ORDER BY e.MESA, e.ORDEN, e.APELLIDO'; // ordered by mesa/orden for list view
   
   try {
     const [rows] = await req.db.query(sql, params);

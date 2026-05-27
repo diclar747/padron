@@ -825,7 +825,7 @@ async function renderElectores(container) {
         <select id="filterMesa" onchange="filtrarElectores(true)"
           class="bg-slate-950 border border-red-800/60 focus:border-red-500 rounded-xl px-4 py-2.5 text-sm text-slate-300 outline-none transition-all font-semibold">
           <option value="">— Seleccionar Mesa —</option>
-          ${mesasData.map(m => `<option value="${m.id}">Mesa ${m.numero} · ${m.barrio_nombre}</option>`).join('')}
+          ${mesasData.map(m => `<option value="${m.barrio_id}:${m.numero}">Mesa ${m.numero} · ${m.barrio_nombre}</option>`).join('')}
         </select>
       </div>
     </div>
@@ -970,12 +970,13 @@ window.filtrarElectores = function(immediate = false) {
 
     const params = {};
     if (q) params.buscar = q;
-    if (barrioId) params.barrio_id = barrioId;
     if (mesaIdVal) {
-      const id = parseInt(mesaIdVal);
-      params.mesa_numero = Math.floor(id % 100);
-      params.mesa_id     = Math.floor((id % 100000) / 100);
-      params.barrio_id   = Math.floor(id / 100000);
+      // value format = "SEC_LOC:MESA_NUMERO" (e.g. "2761:4")
+      const [sec_loc, mesa_num] = mesaIdVal.split(':');
+      params.mesa_id     = sec_loc;   // → AND e.SEC_LOC = ?
+      params.mesa_numero = mesa_num;  // → AND e.MESA = ?
+    } else if (barrioId) {
+      params.barrio_id = barrioId;    // → AND e.CODIGO_SEC = ?
     }
 
     try {
@@ -1010,11 +1011,12 @@ window.filtrarElectores = function(immediate = false) {
       if (summaryEl) summaryEl.classList.add('hidden');
       // Fallback offline
       let local = await localDB.getElectores();
-      if (q)        local = local.filter(e => (e.nombre + ' ' + (e.ci || '')).toLowerCase().includes(q.toLowerCase()));
-      if (barrioId) local = local.filter(e => e.barrio_id == barrioId);
+      if (q) local = local.filter(e => (e.nombre + ' ' + (e.ci || '')).toLowerCase().includes(q.toLowerCase()));
       if (mesaIdVal) {
-        const id = parseInt(mesaIdVal);
-        local = local.filter(e => e.barrio_id == Math.floor(id/100000) && e.mesa_id == Math.floor((id%100000)/100) && e.mesa_numero == Math.floor(id%100));
+        const [sec_loc, mesa_num] = mesaIdVal.split(':');
+        local = local.filter(e => String(e.mesa_id) === sec_loc && String(e.mesa_numero) === mesa_num);
+      } else if (barrioId) {
+        local = local.filter(e => e.barrio_id == barrioId);
       }
       renderListaElectores(local);
     }
