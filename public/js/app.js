@@ -803,38 +803,48 @@ async function renderElectores(container) {
     <div class="flex items-center justify-between mb-6">
       <div>
         <h2 class="text-2xl font-extrabold text-slate-100 tracking-tight">Listado de Electores</h2>
-        <p class="text-xs text-slate-400 mt-1">Administración del padrón general y descargas</p>
+        <p class="text-xs text-slate-400 mt-1">Seleccioná una mesa para ver su lista completa</p>
       </div>
       <button class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700/60 font-bold px-4 py-2.5 rounded-xl text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5" onclick="descargarPDFFiltrado()">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
         Descargar PDF
       </button>
     </div>
-    
-    <div class="bg-slate-900/60 border border-slate-800/80 p-5 rounded-3xl shadow-xl mb-6 space-y-4">
+
+    <div class="bg-slate-900/60 border border-slate-800/80 p-5 rounded-3xl shadow-xl mb-4">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
         <input type="text" id="buscarElector" placeholder="Buscar por nombre o CI..." oninput="filtrarElectores()"
           class="bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-600 outline-none transition-all focus:ring-2 focus:ring-blue-500/20">
-        
+
         <select id="filterBarrio" onchange="filtrarElectores(true)"
           class="bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl px-4 py-2.5 text-sm text-slate-400 outline-none transition-all">
           <option value="">Todos los Sectores</option>
           ${barriosData.map(b => `<option value="${b.id}">${b.nombre}</option>`).join('')}
         </select>
-        
+
         <select id="filterMesa" onchange="filtrarElectores(true)"
-          class="bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl px-4 py-2.5 text-sm text-slate-400 outline-none transition-all">
-          <option value="">Todas las Mesas</option>
-          ${mesasData.map(m => `<option value="${m.id}">Mesa ${m.numero} - ${m.barrio_nombre}</option>`).join('')}
+          class="bg-slate-950 border border-red-800/60 focus:border-red-500 rounded-xl px-4 py-2.5 text-sm text-slate-300 outline-none transition-all font-semibold">
+          <option value="">— Seleccionar Mesa —</option>
+          ${mesasData.map(m => `<option value="${m.id}">Mesa ${m.numero} · ${m.barrio_nombre}</option>`).join('')}
         </select>
       </div>
     </div>
-    
+
+    <!-- Mesa summary bar (hidden until mesa is selected) -->
+    <div id="mesaSummary" class="hidden mb-4 bg-slate-900/70 border border-red-900/40 rounded-2xl px-5 py-3 flex flex-wrap items-center gap-4 text-xs"></div>
+
     <div id="listaElectores" class="space-y-3">
-      <div class="text-center py-8 text-slate-500 text-xs animate-pulse">Cargando electores de la base de datos...</div>
+      <!-- Placeholder inicial -->
+      <div class="flex flex-col items-center justify-center py-20 text-slate-600 gap-3 select-none">
+        <svg class="w-12 h-12 opacity-30" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z" />
+        </svg>
+        <p class="text-sm font-semibold text-slate-500">Seleccioná una mesa para ver su lista</p>
+        <p class="text-xs text-slate-600">También podés buscar por nombre o número de cédula</p>
+      </div>
     </div>
   `;
-  await cargarElectoresLista();
+  // No auto-load: espera que el usuario seleccione mesa o escriba búsqueda
 }
 
 async function cargarElectoresLista() {
@@ -845,9 +855,9 @@ async function cargarElectoresLista() {
     renderListaElectores(allElectores);
   } catch (e) {
     const local = await localDB.getElectores();
-    if (local.length) { 
-      renderListaElectores(local); 
-      showToast('Visualizando datos sin conexión', 'warning'); 
+    if (local.length) {
+      renderListaElectores(local);
+      showToast('Visualizando datos sin conexión', 'warning');
     } else {
       div.innerHTML = `
         <div class="bg-rose-950/40 border border-rose-900 rounded-2xl p-6 text-center text-rose-400 text-xs">
@@ -927,59 +937,93 @@ function renderListaElectores(lista) {
 
 let filtrarElectoresTimeout = null;
 window.filtrarElectores = function(immediate = false) {
-  if (filtrarElectoresTimeout) {
-    clearTimeout(filtrarElectoresTimeout);
-  }
-  
+  if (filtrarElectoresTimeout) clearTimeout(filtrarElectoresTimeout);
+
   const runSearch = async () => {
-    const q = document.getElementById('buscarElector') ? document.getElementById('buscarElector').value.trim() : '';
-    const barrioId = document.getElementById('filterBarrio') ? document.getElementById('filterBarrio').value : '';
-    const mesaIdVal = document.getElementById('filterMesa') ? document.getElementById('filterMesa').value : '';
-    
+    const q         = (document.getElementById('buscarElector')?.value || '').trim();
+    const barrioId  = document.getElementById('filterBarrio')?.value || '';
+    const mesaIdVal = document.getElementById('filterMesa')?.value   || '';
+    const listDiv   = document.getElementById('listaElectores');
+    const summaryEl = document.getElementById('mesaSummary');
+
+    // Nada seleccionado → mostrar placeholder
+    if (!q && !barrioId && !mesaIdVal) {
+      if (summaryEl) summaryEl.classList.add('hidden');
+      if (listDiv) listDiv.innerHTML = `
+        <div class="flex flex-col items-center justify-center py-20 text-slate-600 gap-3 select-none">
+          <svg class="w-12 h-12 opacity-30" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z" />
+          </svg>
+          <p class="text-sm font-semibold text-slate-500">Seleccioná una mesa para ver su lista</p>
+          <p class="text-xs text-slate-600">También podés buscar por nombre o número de cédula</p>
+        </div>`;
+      allElectores = [];
+      return;
+    }
+
+    // Spinner de carga
+    if (listDiv) listDiv.innerHTML = `
+      <div class="text-center py-12">
+        <div class="w-6 h-6 border-2 border-red-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+        <p class="text-slate-500 text-xs animate-pulse">${mesaIdVal ? 'Cargando electores de la mesa...' : 'Buscando...'}</p>
+      </div>`;
+
     const params = {};
     if (q) params.buscar = q;
     if (barrioId) params.barrio_id = barrioId;
-    
     if (mesaIdVal) {
       const id = parseInt(mesaIdVal);
       params.mesa_numero = Math.floor(id % 100);
-      params.mesa_id = Math.floor((id % 100000) / 100);
-      params.barrio_id = Math.floor(id / 100000);
+      params.mesa_id     = Math.floor((id % 100000) / 100);
+      params.barrio_id   = Math.floor(id / 100000);
     }
-    
-    const listDiv = document.getElementById('listaElectores');
-    if (listDiv) {
-      listDiv.innerHTML = '<div class="text-center py-8 text-slate-500 text-xs animate-pulse">Buscando en base de datos real...</div>';
-    }
-    
+
     try {
       allElectores = await api.electores(params);
+
+      // Barra de resumen cuando hay mesa seleccionada
+      if (summaryEl && mesaIdVal) {
+        const mesaOpt = document.getElementById('filterMesa');
+        const mesaLabel = mesaOpt ? mesaOpt.options[mesaOpt.selectedIndex].text : '';
+        const total     = allElectores.length;
+        const votaron   = allElectores.filter(e => e.estado === 'ya_voto').length;
+        const pendientes = total - votaron;
+        const pct = total > 0 ? Math.round(votaron / total * 100) : 0;
+        summaryEl.classList.remove('hidden');
+        summaryEl.innerHTML = `
+          <div class="flex items-center gap-2 text-red-400 font-bold">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+            <span>${mesaLabel}</span>
+          </div>
+          <div class="flex gap-4 ml-auto flex-wrap">
+            <span class="text-slate-400">Total: <strong class="text-slate-200">${total}</strong></span>
+            <span class="text-emerald-400">Votaron: <strong>${votaron}</strong> <span class="text-slate-500">(${pct}%)</span></span>
+            <span class="text-amber-400">Pendientes: <strong>${pendientes}</strong></span>
+          </div>`;
+      } else if (summaryEl) {
+        summaryEl.classList.add('hidden');
+      }
+
       renderListaElectores(allElectores);
     } catch (err) {
       showToast(err.message, 'error');
-      // Fallback to local DB offline search
+      if (summaryEl) summaryEl.classList.add('hidden');
+      // Fallback offline
       let local = await localDB.getElectores();
-      if (q) {
-        local = local.filter(e => (e.nombre + ' ' + (e.ci || '')).toLowerCase().includes(q.toLowerCase()));
-      }
-      if (barrioId) {
-        local = local.filter(e => e.barrio_id == barrioId);
-      }
+      if (q)        local = local.filter(e => (e.nombre + ' ' + (e.ci || '')).toLowerCase().includes(q.toLowerCase()));
+      if (barrioId) local = local.filter(e => e.barrio_id == barrioId);
       if (mesaIdVal) {
         const id = parseInt(mesaIdVal);
-        const mesa_num = Math.floor(id % 100);
-        const sec_loc = Math.floor((id % 100000) / 100);
-        const cod_sec = Math.floor(id / 100000);
-        local = local.filter(e => e.barrio_id == cod_sec && e.mesa_id == sec_loc && e.mesa_numero == mesa_num);
+        local = local.filter(e => e.barrio_id == Math.floor(id/100000) && e.mesa_id == Math.floor((id%100000)/100) && e.mesa_numero == Math.floor(id%100));
       }
       renderListaElectores(local);
     }
   };
-  
+
   if (immediate) {
     runSearch();
   } else {
-    filtrarElectoresTimeout = setTimeout(runSearch, 300);
+    filtrarElectoresTimeout = setTimeout(runSearch, 350);
   }
 };
 
