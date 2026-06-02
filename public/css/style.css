@@ -293,3 +293,306 @@ header, main {
   }
 }
 
+/* ==========================================================================
+   LIGHT MODE OVERRIDES (Active when html does NOT have class 'dark')
+   ========================================================================== */
+html:not(.dark) body {
+  background: radial-gradient(circle at 50% 50%, #fef2f2 0%, #f1f5f9 100%) !important;
+  color: #0f172a !important;
+}
+
+/* Base tailwind override colors in light mode */
+html:not(.dark) .bg-slate-950 {
+  background-color: #f8fafc !important;
+}
+html:not(.dark) .bg-slate-900 {
+  background-color: #ffffff !important;
+}
+html:not(.dark) .bg-slate-900\/60 {
+  background-color: rgba(255, 255, 255, 0.75) !important;
+}
+html:not(.dark) .bg-slate-900\/70 {
+  background-color: rgba(255, 255, 255, 0.75) !important;
+}
+html:not(.dark) .bg-slate-900\/75 {
+  background-color: rgba(255, 255, 255, 0.75) !important;
+}
+html:not(.dark) .bg-slate-900\/80 {
+  background-color: rgba(255, 255, 255, 0.85) !important;
+}
+html:not(.dark) .bg-slate-950\/40 {
+  background-color: rgba(241, 245, 249, 0.5) !important;
+}
+html:not(.dark) .bg-slate-950\/60 {
+  background-color: rgba(241, 245, 249, 0.6) !important;
+}
+html:not(.dark) .bg-slate-950\/75 {
+  background-color: rgba(255, 255, 255, 0.75) !important;
+}
+html:not(.dark) .bg-slate-950\/80 {
+  background-color: #ffffff !important;
+}
+html:not(.dark) .bg-slate-850 {
+  background-color: #f1f5f9 !important;
+}
+html:not(.dark) .bg-slate-800\/60 {
+  background-color: #e2e8f0 !important;
+}
+html:not(.dark) .bg-slate-900\/50 {
+  background-color: rgba(255, 255, 255, 0.65) !important;
+}
+
+/* Interactive elements */
+html:not(.dark) .hover\:bg-slate-800:hover {
+  background-color: #e2e8f0 !important;
+}
+html:not(.dark) .hover\:bg-slate-700\/60:hover {
+  background-color: #e2e8f0 !important;
+}
+html:not(.dark) .hover\:bg-slate-800\/60:hover {
+  background-color: #e2e8f0 !important;
+}
+html:not(.dark) .border-slate-800 {
+  border-color: #e2e8f0 !important;
+}
+html:not(.dark) .border-slate-800\/80 {
+  border-color: #e2e8f0 !important;
+}
+html:not(.dark) .border-slate-850 {
+  border-color: #e2e8f0 !important;
+}
+html:not(.dark) .border-slate-700\/50 {
+  border-color: #e2e8f0 !important;
+}
+html:not(.dark) .border-slate-700\/60 {
+  border-color: #e2e8f0 !important;
+}
+html:not(.dark) .border-slate-900 {
+  border-color: #f1f5f9 !important;
+}
+html:not(.dark) .border-t {
+  border-color: #cbd5e1 !important;
+}
+html:not(.dark) .border-b {
+  border-color: #e2e8f0 !important;
+}
+
+/* Gradient backgrounds for cards */
+html:not(.dark) .bg-gradient-to-br {
+  background-image: linear-gradient(to bottom right, #ffffff, #f8fafc) !important;
+}
+
+/* Input fields overrides */
+html:not(.dark) input[type="text"],
+html:not(.dark) input[type="email"],
+html:not(.dark) input[type="password"],
+html:not(.dark) select {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+html:not(.dark) input::placeholder {
+  color: #94a3b8 !important;
+}
+html:not(.dark) select option {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+/* General Typography text override */
+html:not(.dark) .text-slate-100 {
+  color: #0f172a !important;
+}
+html:not(.dark) .text-slate-200 {
+  color: #1e293b !important;
+}
+html:not(.dark) .text-slate-300 {
+  color: #334155 !important;
+}
+html:not(.dark) .text-slate-400 {
+  color: #475569 !important;
+}
+html:not(.dark) .text-slate-500 {
+  color: #64748b !important;
+}
+html:not(.dark) h2.text-white {
+  color: #0f172a !important;
+}
+html:not(.dark) h2.text-slate-100 {
+  color: #0f172a !important;
+}
+html:not(.dark) h3.text-slate-100 {
+  color: #0f172a !important;
+}
+html:not(.dark) h3.text-slate-200 {
+  color: #1e293b !important;
+}
+html:not(.dark) h4.text-slate-100 {
+  color: #0f172a !important;
+}
+
+/* Nav & Sidebar overrides */
+html:not(.dark) #appNav {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+}
+html:not(.dark) #sidebarLogoText {
+  color: #0f172a !important;
+}
+html:not(.dark) #appNav button {
+  color: #475569 !important;
+}
+html:not(.dark) #appNav button:hover {
+  color: #ef4444 !important;
+  background-color: #f8fafc !important;
+}
+html:not(.dark) #appNav button.active {
+  background-color: rgba(239, 68, 68, 0.08) !important;
+  color: #ef4444 !important;
+}
+
+/* Tables design override */
+html:not(.dark) table thead tr {
+  border-color: #e2e8f0 !important;
+  color: #475569 !important;
+}
+html:not(.dark) table tbody tr {
+  border-color: rgba(226, 232, 240, 0.5) !important;
+}
+html:not(.dark) table tbody tr:hover {
+  background-color: rgba(241, 245, 249, 0.5) !important;
+}
+html:not(.dark) table tbody td {
+  color: #334155 !important;
+}
+html:not(.dark) table tbody td.text-slate-200 {
+  color: #0f172a !important;
+}
+
+/* Leaflet & maps light styling */
+html:not(.dark) .leaflet-container {
+  background: #f1f5f9 !important;
+}
+html:not(.dark) .leaflet-popup-content-wrapper,
+html:not(.dark) .leaflet-popup-tip {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+}
+html:not(.dark) .leaflet-popup-close-button {
+  color: #475569 !important;
+}
+
+/* Modals layout overrides */
+html:not(.dark) .modal-overlay {
+  background: rgba(15, 23, 42, 0.3) !important;
+}
+html:not(.dark) .modal-card {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+}
+
+/* Toast container design overrides */
+html:not(.dark) .toast {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+/* PWA install banners bottom sheet */
+html:not(.dark) .pwa-banner {
+  background: rgba(255, 255, 255, 0.96) !important;
+  border-color: rgba(220, 38, 38, 0.35) !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Badges indicators (Habilitado / Ya voto) */
+html:not(.dark) .bg-emerald-950 {
+  background-color: #d1fae5 !important;
+  border-color: #a7f3d0 !important;
+}
+html:not(.dark) .bg-emerald-950\/80 {
+  background-color: #d1fae5 !important;
+  border-color: #a7f3d0 !important;
+}
+html:not(.dark) .text-emerald-400 {
+  color: #065f46 !important;
+}
+html:not(.dark) .border-emerald-800 {
+  border-color: #a7f3d0 !important;
+}
+
+html:not(.dark) .bg-amber-950 {
+  background-color: #fef3c7 !important;
+  border-color: #fde68a !important;
+}
+html:not(.dark) .bg-amber-950\/80 {
+  background-color: #fef3c7 !important;
+  border-color: #fde68a !important;
+}
+html:not(.dark) .text-amber-400 {
+  color: #92400e !important;
+}
+html:not(.dark) .border-amber-800 {
+  border-color: #fde68a !important;
+}
+
+/* Warnings and errors notification overrides */
+html:not(.dark) .bg-rose-950\/20 {
+  background-color: #fee2e2 !important;
+  border-color: #fca5a5 !important;
+}
+html:not(.dark) .bg-rose-950\/40 {
+  background-color: #fee2e2 !important;
+  border-color: #fca5a5 !important;
+}
+html:not(.dark) .text-rose-300 {
+  color: #991b1b !important;
+}
+html:not(.dark) .text-rose-400 {
+  color: #b91c1c !important;
+}
+html:not(.dark) .border-rose-900\/30 {
+  border-color: #fca5a5 !important;
+}
+html:not(.dark) .bg-rose-950\/80 {
+  background-color: #fee2e2 !important;
+  border-color: #fca5a5 !important;
+}
+html:not(.dark) .border-rose-800 {
+  border-color: #fca5a5 !important;
+}
+html:not(.dark) .bg-slate-800\/60 {
+  background-color: #e2e8f0 !important;
+  border-color: #cbd5e1 !important;
+}
+html:not(.dark) .border-slate-700\/50 {
+  border-color: #cbd5e1 !important;
+}
+html:not(.dark) .bg-slate-950\/40 {
+  background-color: rgba(241, 245, 249, 0.4) !important;
+}
+html:not(.dark) .bg-rose-950\/20 {
+  background-color: rgba(254, 226, 226, 0.4) !important;
+}
+html:not(.dark) .border-rose-900\/30 {
+  border-color: rgba(248, 113, 113, 0.3) !important;
+}
+html:not(.dark) .border-slate-900 {
+  border-color: #f1f5f9 !important;
+}
+html:not(.dark) .divide-slate-800\/40 > * {
+  border-color: #cbd5e1 !important;
+}
+html:not(.dark) tr.hover\:bg-slate-950\/40:hover {
+  background-color: #f1f5f9 !important;
+}
+html:not(.dark) .bg-slate-950\/60 {
+  background-color: rgba(241, 245, 249, 0.6) !important;
+}
+html:not(.dark) .bg-slate-950\/75 {
+  background-color: rgba(255, 255, 255, 0.75) !important;
+}
+
+

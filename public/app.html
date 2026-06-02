@@ -23,6 +23,16 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="/css/style.css">
   <meta name="theme-color" content="#0f172a">
+  <script>
+    (function() {
+      const theme = localStorage.getItem('theme') || 'light';
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    })();
+  </script>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased selection:bg-blue-500 selection:text-white">
   
@@ -34,6 +44,11 @@
       </h1>
     </div>
     <div class="flex items-center gap-4">
+      <!-- Theme Toggle Button -->
+      <button id="themeToggleBtn" class="p-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 rounded-xl transition-all cursor-pointer" title="Cambiar Tema">
+        <svg id="themeToggleIcon" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"></svg>
+      </button>
+
       <!-- Fullscreen Toggle Button -->
       <button id="fullscreenBtn" class="p-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 rounded-xl transition-all cursor-pointer" title="Pantalla Completa">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -209,5 +224,10 @@
   <script src="/js/api.js"></script>
   <script src="/js/db.js"></script>
   <script src="/js/app.js"></script>
+  <script>
+    if (typeof window.initThemeToggle === 'function') {
+      window.initThemeToggle();
+    }
+  </script>
 </body>
 </html>

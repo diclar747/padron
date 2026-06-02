@@ -124,3 +124,41 @@ const api = {
     eliminar: (id) => apiFetch(`/usuarios/${id}`, { method: 'DELETE' }),
   }
 };
+
+// Theme Toggle Utility
+window.initThemeToggle = function() {
+  const btn = document.getElementById('themeToggleBtn');
+  if (!btn) return;
+  
+  const icon = document.getElementById('themeToggleIcon');
+  if (!icon) return;
+  
+  const sunPath = `<path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m12.728 12.728l.707.707M6.343 12a5.657 5.657 0 1111.314 0 5.657 5.657 0 01-11.314 0z" />`;
+  const moonPath = `<path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />`;
+  
+  const updateIcon = () => {
+    const isDark = document.documentElement.classList.contains('dark');
+    if (isDark) {
+      icon.innerHTML = sunPath;
+      btn.title = "Modo Claro";
+    } else {
+      icon.innerHTML = moonPath;
+      btn.title = "Modo Oscuro";
+    }
+  };
+  
+  updateIcon();
+  
+  btn.addEventListener('click', () => {
+    const isDark = document.documentElement.classList.toggle('dark');
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    updateIcon();
+    
+    // Force redraw the dashboard chart if currently on dashboard to refresh grid/labels
+    const activeBtn = document.querySelector('.app-nav button.active');
+    if (activeBtn && activeBtn.dataset.page === 'dashboard' && typeof navigate === 'function') {
+      navigate('dashboard');
+    }
+  });
+};
+

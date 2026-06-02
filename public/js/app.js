@@ -835,7 +835,7 @@ async function renderElectores(container) {
     </div>
 
     <div class="bg-slate-900/60 border border-slate-800/80 p-5 rounded-3xl shadow-xl mb-4">
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
         <input type="text" id="buscarElector" placeholder="Buscar por nombre o CI..." oninput="filtrarElectores()"
           class="bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-600 outline-none transition-all focus:ring-2 focus:ring-blue-500/20">
 
@@ -849,6 +849,13 @@ async function renderElectores(container) {
           class="bg-slate-950 border border-red-800/60 focus:border-red-500 rounded-xl px-4 py-2.5 text-sm text-slate-300 outline-none transition-all font-semibold">
           <option value="">— Seleccionar Mesa —</option>
           ${mesasData.map(m => `<option value="${m.barrio_id}:${m.numero}">Mesa ${m.numero} · ${m.barrio_nombre}</option>`).join('')}
+        </select>
+
+        <select id="filterEstado" onchange="filtrarElectores(true)"
+          class="bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl px-4 py-2.5 text-sm text-slate-300 outline-none transition-all font-semibold">
+          <option value="">Todos los Estados</option>
+          <option value="ya_voto">Ya Votaron</option>
+          <option value="pendiente">Aún no Votaron</option>
         </select>
       </div>
     </div>
@@ -974,6 +981,36 @@ function renderListaElectores(lista) {
   }).join('');
 }
 
+function aplicarFiltrosCliente(lista) {
+  let filtered = lista;
+  
+  // 1. Filtrar por estado de voto
+  const estadoVal = document.getElementById('filterEstado')?.value || '';
+  if (estadoVal) {
+    if (estadoVal === 'ya_voto') {
+      filtered = filtered.filter(e => e.estado === 'ya_voto');
+    } else if (estadoVal === 'pendiente') {
+      filtered = filtered.filter(e => e.estado !== 'ya_voto');
+    }
+  }
+  
+  // 2. Filtrar por sub-búsqueda dentro de la mesa (si está activa)
+  const subQ = (document.getElementById('buscarEnMesa')?.value || '').trim();
+  if (subQ) {
+    const isNumeric = /^\d+$/.test(subQ);
+    const qLower = subQ.toLowerCase();
+    filtered = filtered.filter(e => {
+      if (isNumeric) {
+        return String(e.ci).trim() === subQ || String(e.orden).trim() === subQ;
+      } else {
+        return (e.nombre || '').toLowerCase().includes(qLower);
+      }
+    });
+  }
+  
+  return filtered;
+}
+
 let filtrarElectoresTimeout = null;
 window.filtrarElectores = function(immediate = false) {
   if (filtrarElectoresTimeout) clearTimeout(filtrarElectoresTimeout);
@@ -1053,7 +1090,7 @@ window.filtrarElectores = function(immediate = false) {
         if (subSearch) subSearch.classList.add('hidden');
       }
 
-      renderListaElectores(allElectores);
+      renderListaElectores(aplicarFiltrosCliente(allElectores));
     } catch (err) {
       showToast(err.message, 'error');
       if (summaryEl) summaryEl.classList.add('hidden');
@@ -1066,7 +1103,7 @@ window.filtrarElectores = function(immediate = false) {
       } else if (barrioId) {
         local = local.filter(e => e.barrio_id == barrioId);
       }
-      renderListaElectores(local);
+      renderListaElectores(aplicarFiltrosCliente(local));
     }
   };
 
@@ -1079,30 +1116,8 @@ window.filtrarElectores = function(immediate = false) {
 
 // Filtro local dentro de la mesa ya cargada (sin nueva llamada al servidor)
 window.filtrarMesaLocal = function() {
-  const q = (document.getElementById('buscarEnMesa')?.value || '').trim();
   if (!allElectores.length) return;
-
-  if (!q) {
-    renderListaElectores(allElectores);
-    return;
-  }
-
-  const isNumeric = /^\d+$/.test(q);
-  const qLower    = q.toLowerCase();
-
-  const filtered = allElectores.filter(e => {
-    if (isNumeric) {
-      // Numérico → exacto: orden O cédula completa
-      const ci    = String(e.ci    || '').trim();
-      const orden = String(e.orden || '').trim();
-      return ci === q || orden === q;
-    } else {
-      // Texto → parcial por nombre
-      return (e.nombre || '').toLowerCase().includes(qLower);
-    }
-  });
-
-  renderListaElectores(filtered);
+  renderListaElectores(aplicarFiltrosCliente(allElectores));
 };
 
 window.editarElector = async function(id) {
