@@ -835,12 +835,12 @@ async function renderElectores(container) {
     </div>
 
     <div class="bg-slate-900/60 border border-slate-800/80 p-5 rounded-3xl shadow-xl mb-4">
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <input type="text" id="buscarElector" placeholder="Buscar por nombre o CI..." oninput="filtrarElectores()"
           class="bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-600 outline-none transition-all focus:ring-2 focus:ring-blue-500/20">
 
         <select id="filterBarrio" onchange="filtrarElectores(true)"
-          class="bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl px-4 py-2.5 text-sm text-slate-400 outline-none transition-all">
+          class="hidden">
           <option value="">Todos los Sectores</option>
           ${barriosData.map(b => `<option value="${b.id}">${b.nombre}</option>`).join('')}
         </select>
