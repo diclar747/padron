@@ -95,8 +95,8 @@ router.get('/', authMiddleware, (req, res, next) => {
   }
   
   if (barrio_id) {
-    sql += ' AND e.CODIGO_SEC = ?';
-    params.push(barrio_id);
+    sql += ' AND e.CODIGO_SEC IN (SELECT CODIGO_SEC FROM seccio WHERE NDISTRITO = (SELECT NDISTRITO FROM seccio WHERE CODIGO_SEC = ?))';
+    params.push(parseInt(barrio_id));
   }
   
   if (mesa_id) {

@@ -8,7 +8,7 @@ router.get('/dashboard', authMiddleware, checkPermiso('dashboard'), async (req, 
     let whereClause = '1=1';
     const params = [];
     if (barrio_id) {
-      whereClause = 'CODIGO_SEC = ?';
+      whereClause = 'CODIGO_SEC IN (SELECT CODIGO_SEC FROM seccio WHERE NDISTRITO = (SELECT NDISTRITO FROM seccio WHERE CODIGO_SEC = ?))';
       params.push(parseInt(barrio_id));
     }
 
@@ -16,13 +16,19 @@ router.get('/dashboard', authMiddleware, checkPermiso('dashboard'), async (req, 
     const [[votaron]] = await req.db.query(`SELECT COUNT(*) as total FROM mas_pda WHERE votado = 1 AND ${whereClause}`, params);
     const [[no_votaron]] = await req.db.query(`SELECT COUNT(*) as total FROM mas_pda WHERE votado = 0 AND ${whereClause}`, params);
     
-    // Total unique mesas combination
-    const [[mesas]] = await req.db.query(`SELECT COUNT(DISTINCT (CODIGO_SEC, SEC_LOC, MESA)) as total FROM mas_pda WHERE ${whereClause}`, params);
+    // Total unique mesas combination (Compatible with both MySQL and PostgreSQL)
+    const [[mesas]] = await req.db.query(`
+      SELECT COUNT(*) as total FROM (
+        SELECT DISTINCT CODIGO_SEC, SEC_LOC, MESA 
+        FROM mas_pda 
+        WHERE ${whereClause}
+      ) as sub
+    `, params);
     
     let barriosSql = 'SELECT COUNT(*) as total FROM seccio';
     const barriosParams = [];
     if (barrio_id) {
-      barriosSql = 'SELECT COUNT(*) as total FROM seccio WHERE CODIGO_SEC = ?';
+      barriosSql = 'SELECT COUNT(*) as total FROM seccio WHERE NDISTRITO = (SELECT NDISTRITO FROM seccio WHERE CODIGO_SEC = ?)';
       barriosParams.push(parseInt(barrio_id));
     }
     const [[barrios]] = await req.db.query(barriosSql, barriosParams);

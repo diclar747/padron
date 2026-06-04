@@ -8,7 +8,7 @@ router.get('/', authMiddleware, checkPermiso('mesas'), async (req, res) => {
     let whereClause = '1=1';
     const params = [];
     if (barrio_id) {
-      whereClause = 'e.CODIGO_SEC = ?';
+      whereClause = 'e.CODIGO_SEC IN (SELECT CODIGO_SEC FROM seccio WHERE NDISTRITO = (SELECT NDISTRITO FROM seccio WHERE CODIGO_SEC = ?))';
       params.push(parseInt(barrio_id));
     }
     const [rows] = await req.db.query(`
@@ -22,13 +22,15 @@ router.get('/', authMiddleware, checkPermiso('mesas'), async (req, res) => {
           WHEN s.NDISTRITO = 'HOHENAU' THEN -27.0852
           WHEN s.NDISTRITO = 'OBLIGADO' THEN -27.0335
           WHEN s.NDISTRITO = 'BELLA VISTA' THEN -27.0502
-          ELSE -27.0502 
+          WHEN s.NDISTRITO = 'ENCARNACION' THEN -27.3306
+          ELSE -27.3306 
         END as lat,
         CASE 
           WHEN s.NDISTRITO = 'HOHENAU' THEN -55.6502
           WHEN s.NDISTRITO = 'OBLIGADO' THEN -55.6335
           WHEN s.NDISTRITO = 'BELLA VISTA' THEN -55.5835
-          ELSE -55.6002 
+          WHEN s.NDISTRITO = 'ENCARNACION' THEN -55.8667
+          ELSE -55.8667 
         END as lng,
         COUNT(*) as electores_esperados,
         COUNT(*) as electores_cargados,

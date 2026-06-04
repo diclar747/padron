@@ -3927,6 +3927,7 @@ window.abrirCrearUsuario = function() {
       <select name="distrito" class="w-full bg-slate-950 border border-slate-850 focus:border-blue-500 rounded-xl px-3.5 py-2.5 text-xs text-slate-400 outline-none">
         <option value="">Ninguno (Superadmin)</option>
         <option value="BELLA VISTA">BELLA VISTA</option>
+        <option value="ENCARNACION">ENCARNACION</option>
         <option value="HOHENAU">HOHENAU</option>
         <option value="OBLIGADO">OBLIGADO</option>
       </select>
@@ -4108,6 +4109,7 @@ window.editarUsuarioAdmin = function(id) {
       <select name="distrito" class="w-full bg-slate-950 border border-slate-850 focus:border-blue-500 rounded-xl px-3.5 py-2.5 text-xs text-slate-400 outline-none">
         <option value="" ${!u.distrito?'selected':''}>Ninguno (Superadmin)</option>
         <option value="BELLA VISTA" ${u.distrito==='BELLA VISTA'?'selected':''}>BELLA VISTA</option>
+        <option value="ENCARNACION" ${u.distrito==='ENCARNACION'?'selected':''}>ENCARNACION</option>
         <option value="HOHENAU" ${u.distrito==='HOHENAU'?'selected':''}>HOHENAU</option>
         <option value="OBLIGADO" ${u.distrito==='OBLIGADO'?'selected':''}>OBLIGADO</option>
       </select>

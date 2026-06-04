@@ -14,7 +14,7 @@ router.get('/', async (req, res) => {
     let whereClause = '1=1';
     const params = [];
     if (barrio_id) {
-      whereClause = 'i.barrio_id = ?';
+      whereClause = 'i.barrio_id IN (SELECT CODIGO_SEC FROM seccio WHERE NDISTRITO = (SELECT NDISTRITO FROM seccio WHERE CODIGO_SEC = ?))';
       params.push(parseInt(barrio_id));
     }
     const [rows] = await req.db.query(`

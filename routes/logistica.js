@@ -5,7 +5,8 @@ const router = express.Router();
 // ── Auto-create tables on first use ───────────────────────────────
 let tablesReady = false;
 async function ensureTables(db) {
-  if (tablesReady) return;
+  tablesReady = true;
+  return;
   await db.query(`
     CREATE TABLE IF NOT EXISTS camp_presupuestos (
       id          SERIAL PRIMARY KEY,
@@ -435,7 +436,7 @@ router.get('/alertas', checkPermiso('logistica'), async (req, res) => {
     }
     // 3. Gastos inusualmente altos (> Gs. 5.000.000 en una sola carga)
     const [gastosAltos] = await req.db.query(`
-      SELECT * FROM camp_gastos WHERE monto > 5000000 AND created_at > NOW() - INTERVAL '24 hours'
+      SELECT * FROM camp_gastos WHERE monto > 5000000 AND created_at > NOW() - INTERVAL 24 HOUR
       ORDER BY monto DESC LIMIT 5
     `);
     for (const g of gastosAltos) {
@@ -443,7 +444,7 @@ router.get('/alertas', checkPermiso('logistica'), async (req, res) => {
     }
     // 4. Tareas atrasadas (más de 2 horas en estado pendiente)
     const [tareasAtr] = await req.db.query(`
-      SELECT * FROM camp_tareas WHERE estado='pendiente' AND prioridad='urgente' AND created_at < NOW() - INTERVAL '2 hours'
+      SELECT * FROM camp_tareas WHERE estado='pendiente' AND prioridad='urgente' AND created_at < NOW() - INTERVAL 2 HOUR
     `);
     for (const t of tareasAtr) {
       alertas.push({ nivel: 'alto', tipo: 'tarea', mensaje: `Tarea urgente sin iniciar: "${t.titulo}"`, detalle: `Asignado: ${t.asignado_nombre||'Sin asignar'}` });
