@@ -72,6 +72,7 @@ router.get('/', authMiddleware, (req, res, next) => {
       e.SEC_LOC as mesa_id,
       CASE WHEN e.votado = 1 THEN 'ya_voto' ELSE 'no_voto' END as estado,
       e.observaciones, 
+      e.telefono,
       e.veedor_id, 
       u.nombre as veedor_nombre,
       e.lat_voto as lat,
@@ -143,9 +144,9 @@ router.post('/', authMiddleware, checkPermiso('cargar'), async (req, res) => {
   
   try {
     const [result] = await req.db.query(
-      `INSERT INTO mas_pda (NOMBRE, APELLIDO, NUMERO_CED, DIRECCION, CODIGO_SEC, MESA, SEC_LOC, votado, observaciones, veedor_id, lat_voto, lng_voto, ORDEN)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [first_name, last_name, ci, direccion, codigo_sec, mesa_num, sec_loc, votado, observaciones, veedor_id, lat, lng, 999]
+      `INSERT INTO mas_pda (NOMBRE, APELLIDO, NUMERO_CED, DIRECCION, CODIGO_SEC, MESA, SEC_LOC, votado, observaciones, veedor_id, lat_voto, lng_voto, ORDEN, telefono)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [first_name, last_name, ci, direccion, codigo_sec, mesa_num, sec_loc, votado, observaciones, veedor_id, lat, lng, 999, telefono || null]
     );
     res.json({ id: result.insertId, success: true });
   } catch (e) {
@@ -177,9 +178,10 @@ router.put('/:id', authMiddleware, checkPermiso('electores'), async (req, res) =
         votado=?, 
         observaciones=?, 
         lat_voto=?, 
-        lng_voto=?
+        lng_voto=?,
+        telefono=?
        WHERE id=?`,
-      [first_name, last_name, ci, direccion, codigo_sec, sec_loc, votado, observaciones, lat, lng, req.params.id]
+      [first_name, last_name, ci, direccion, codigo_sec, sec_loc, votado, observaciones, lat, lng, telefono || null, req.params.id]
     );
     res.json({ success: true });
   } catch (e) {

@@ -1143,6 +1143,10 @@ window.editarElector = async function(id) {
           <input name="ci" value="${e.ci||''}" class="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl px-3 py-2 text-sm text-slate-100 outline-none">
         </div>
         <div>
+          <label class="block text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1.5">Teléfono</label>
+          <input name="telefono" value="${e.telefono||''}" placeholder="Ej: 0981 123456" class="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl px-3 py-2 text-sm text-slate-100 outline-none">
+        </div>
+        <div>
           <label class="block text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1.5">Dirección</label>
           <input name="direccion" value="${e.direccion||''}" class="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl px-3 py-2 text-sm text-slate-100 outline-none">
         </div>
