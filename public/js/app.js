@@ -865,17 +865,24 @@ async function renderElectores(container) {
 
     <!-- Sub-buscador dentro de la mesa (hidden until mesa is selected) -->
     <div id="mesaSubSearch" class="hidden mb-4">
-      <div class="relative">
+      <div class="relative flex items-center w-full">
         <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <circle cx="11" cy="11" r="8"/><path stroke-linecap="round" d="M21 21l-4.35-4.35"/>
         </svg>
         <input
           type="text"
           id="buscarEnMesa"
-          placeholder="Buscar por nombre, CI o N° de orden..."
+          inputmode="numeric"
+          placeholder="Buscar por CI o N° de orden..."
           oninput="filtrarMesaLocal()"
-          class="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-100 placeholder-slate-600 outline-none transition-all focus:ring-2 focus:ring-blue-500/20"
+          class="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 rounded-xl pl-10 pr-16 py-2.5 text-sm text-slate-100 placeholder-slate-650 outline-none transition-all focus:ring-2 focus:ring-blue-500/20"
         >
+        <button type="button" onclick="toggleTecladoBusqueda()" id="btnToggleTeclado"
+          class="absolute right-2 px-2.5 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[10px] font-extrabold text-blue-400 rounded-lg shadow-sm transition-all active:scale-95 cursor-pointer flex items-center gap-1 select-none"
+          title="Cambiar tipo de teclado">
+          <span>123</span>
+          <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 002 2h2a2 2 0 002-2z"/></svg>
+        </button>
       </div>
     </div>
 
@@ -1118,6 +1125,26 @@ window.filtrarElectores = function(immediate = false) {
 window.filtrarMesaLocal = function() {
   if (!allElectores.length) return;
   renderListaElectores(aplicarFiltrosCliente(allElectores));
+};
+
+window.toggleTecladoBusqueda = function() {
+  const input = document.getElementById('buscarEnMesa');
+  const btn = document.getElementById('btnToggleTeclado');
+  if (!input || !btn) return;
+
+  const currentMode = input.getAttribute('inputmode') || 'text';
+  if (currentMode === 'numeric') {
+    input.setAttribute('inputmode', 'text');
+    input.placeholder = "Buscar por nombre...";
+    btn.innerHTML = `<span>Abc</span><svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8.25V18a2.25 2.25 0 002.25 2.25h13.5A2.25 2.25 0 0021 18V8.25m-18 0V6a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 6v2.25m-18 0h18M5.25 6h.008v.008H5.25V6zM7.5 6h.008v.008H7.5V6zm2.25 0h.008v.008H9.75V6z" /></svg>`;
+    btn.classList.replace('text-blue-400', 'text-amber-400');
+  } else {
+    input.setAttribute('inputmode', 'numeric');
+    input.placeholder = "Buscar por CI o N° de orden...";
+    btn.innerHTML = `<span>123</span><svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 002 2h2a2 2 0 002-2z"/></svg>`;
+    btn.classList.replace('text-amber-400', 'text-blue-400');
+  }
+  input.focus();
 };
 
 window.editarElector = async function(id) {

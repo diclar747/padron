@@ -1,4 +1,4 @@
-const CACHE_NAME = 'padron-v9';
+const CACHE_NAME = 'padron-v10';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
