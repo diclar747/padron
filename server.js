@@ -7,10 +7,11 @@ const { Pool } = require('pg');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// PostgreSQL Neon pool
+// PostgreSQL pool (SSL only when the connection string requests it, e.g. Neon's sslmode=require)
+const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 const db = new Pool({
-  connectionString: process.env.DATABASE_URL || process.env.POSTGRES_URL,
-  ssl: { rejectUnauthorized: false }
+  connectionString,
+  ssl: /sslmode=require/.test(connectionString || '') ? { rejectUnauthorized: false } : false
 });
 
 // Wrap pg pool query to mimic mysql2 query signature
