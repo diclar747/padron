@@ -343,32 +343,36 @@
       }
     });
 
-    // PWA Install Banner
+    // PWA Install Banner (elements are defined further down in the HTML,
+    // so we wait for the DOM to finish parsing before looking them up)
     let deferredPrompt;
-    const pwaBanner = document.getElementById('pwaInstallBanner');
-    const btnInstall = document.getElementById('btnPwaInstall');
-    const btnClose   = document.getElementById('btnPwaClose');
+    document.addEventListener('DOMContentLoaded', () => {
+      const pwaBanner = document.getElementById('pwaInstallBanner');
+      const btnInstall = document.getElementById('btnPwaInstall');
+      const btnClose   = document.getElementById('btnPwaClose');
+      if (!pwaBanner || !btnInstall || !btnClose) return;
 
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      if (sessionStorage.getItem('pwa_install_dismissed') !== 'true') {
-        setTimeout(() => pwaBanner.classList.add('show'), 800);
-      }
-    });
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        if (sessionStorage.getItem('pwa_install_dismissed') !== 'true') {
+          setTimeout(() => pwaBanner.classList.add('show'), 800);
+        }
+      });
 
-    btnInstall.addEventListener('click', async () => {
-      if (deferredPrompt) {
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        deferredPrompt = null;
-      }
-      pwaBanner.classList.remove('show');
-    });
+      btnInstall.addEventListener('click', async () => {
+        if (deferredPrompt) {
+          deferredPrompt.prompt();
+          const { outcome } = await deferredPrompt.userChoice;
+          deferredPrompt = null;
+        }
+        pwaBanner.classList.remove('show');
+      });
 
-    btnClose.addEventListener('click', () => {
-      pwaBanner.classList.remove('show');
-      sessionStorage.setItem('pwa_install_dismissed', 'true');
+      btnClose.addEventListener('click', () => {
+        pwaBanner.classList.remove('show');
+        sessionStorage.setItem('pwa_install_dismissed', 'true');
+      });
     });
 
     if (typeof window.initThemeToggle === 'function') {
