@@ -774,6 +774,16 @@ html, body {
   min-width: 3px;
 }
 
+.res-bar-foto { display: flex; align-items: center; gap: 10px; }
+.res-bar-img {
+  width: 40px; height: 40px; border-radius: 10px;
+  object-fit: cover; flex: none;
+  background: rgba(148,163,184,.15);
+  border: 1px solid rgba(148,163,184,.25);
+}
+.res-bar-img.sin-foto { visibility: hidden; }
+.res-bar-foto .res-bar-body { flex: 1; min-width: 0; }
+
 .res-foot {
   display: flex; align-items: center; gap: 12px;
   margin-top: 18px; flex-wrap: wrap;

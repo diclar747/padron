@@ -11,16 +11,15 @@
   var DATA_URL = ASSET + 'data/boleta-bella-vista.json';
   var API = '/api/simulador';
   var RESULTADOS_URL = ASSET + 'resultados.html';
-  var EXIGIR_PADRON = true;           // sólo electores de Bella Vista pueden votar el simulacro
 
   var root = document.getElementById('simRoot');
   var boleta = null;
 
   // ---- estado -------------------------------------------------------
-  var STEP = 'intro';                 // intro | identificacion | ya_voto | g_cedula | g_insertar | maquina | g_verificar | g_doblar | g_tinta | gracias
+  var STEP = 'intro';                 // intro | ya_voto | g_cedula | g_insertar | maquina | g_verificar | g_doblar | g_tinta | gracias
   var maq = { view: 'categoria', catIndex: 0, prefLista: null, modificando: false };
   var sel = {};                       // { INT: {...}, JUN: {...} }
-  var votante = null;                 // { ci, nombre, enPadron, mesa, local }
+  var votante = null;                 // { votadoEn } — sólo cuando este dispositivo ya votó
   var votoEnviado = false;
   var enviando = false;
   var busy = false;                   // evita doble tap durante el feedback visual
@@ -42,7 +41,7 @@
     intro: {
       dot: -1, grafico: ASSET + 'img/guia/maquina0_p6.png',
       html: '<b>Simulador del uso de la máquina de votación.</b>',
-      big: null, btn: 'Comenzar', btnClase: 'verde', next: 'identificacion'
+      big: null, btn: 'Comenzar', btnClase: 'verde', next: 'g_cedula'
     },
     g_cedula: {
       dot: 0, grafico: ASSET + 'img/guia/boleta-troquel.png',
@@ -113,7 +112,6 @@
   function render() {
     if (!boleta) return;
     if (STEP === 'maquina') { renderMaquina(); return; }
-    if (STEP === 'identificacion') { renderIdentificacion(); return; }
     if (STEP === 'ya_voto') { renderYaVoto(); return; }
     renderGuia(GUIA[STEP]);
   }
@@ -171,8 +169,26 @@
         '</div>' +
       pantallaCerrar();
 
-    document.getElementById('simNext').onclick = function () { irA(g.next); };
+    document.getElementById('simNext').onclick = function () {
+      if (g === GUIA.intro) { comenzar(); } else { irA(g.next); }
+    };
     if (g.btn2) document.getElementById('simNext2').onclick = function () { irA(g.btn2Next); };
+  }
+
+  // ---- chequeo de doble voto por dispositivo (sin pedir cédula) -----
+  function comenzar() {
+    var btn = document.getElementById('simNext');
+    if (btn) { btn.disabled = true; btn.textContent = 'Un momento…'; }
+    fetch(API + '/estado?device_id=' + encodeURIComponent(deviceId))
+      .then(function (r) { return r.json().then(function (j) { return { status: r.status, j: j }; }); })
+      .then(function (res) {
+        if (res.status === 200 && res.j.yaVoto) {
+          votante = { votadoEn: res.j.votadoEn };
+          STEP = 'ya_voto'; render(); return;
+        }
+        irA(GUIA.intro.next);
+      })
+      .catch(function () { irA(GUIA.intro.next); });
   }
 
   function renderBoletin() {
@@ -193,82 +209,11 @@
       '</div>';
   }
 
-  // ---- identificación del votante --------------------------------
   function fmtFecha(iso) {
     try {
       var d = new Date(iso);
       return d.toLocaleString('es-PY', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
     } catch (e) { return ''; }
-  }
-
-  function renderIdentificacion(msg) {
-    var ciPrev = '';
-    try { ciPrev = localStorage.getItem('sim_voto_ci') || ''; } catch (e) {}
-
-    root.innerHTML =
-      pantallaAbrir('is-guia') +
-        '<div class="guia">' +
-          '<div class="guia-scroll">' +
-            '<div class="ident">' +
-              '<div class="ident-ico">' +
-                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2.5" y="4.5" width="19" height="15" rx="2"/><circle cx="8.5" cy="11" r="2.4"/><path d="M4.7 17c.6-2 2-3 3.8-3s3.2 1 3.8 3M14 9h5M14 12.5h5M14 16h3"/></svg>' +
-              '</div>' +
-              '<h2>Identificate para votar en el simulacro</h2>' +
-              '<p class="ident-sub">Ingresá tu número de cédula. Se usa únicamente para que cada persona vote una sola vez. ' +
-                'El voto es secreto y este simulacro <b>no es oficial</b>.</p>' +
-              '<div class="ident-form">' +
-                '<input id="simCi" type="tel" inputmode="numeric" autocomplete="off" ' +
-                  'placeholder="Ej: 3686743" value="' + esc(ciPrev) + '" maxlength="9">' +
-                '<button id="simCiBtn" class="next verde">Continuar</button>' +
-              '</div>' +
-              (msg ? '<div class="ident-msg">' + esc(msg) + '</div>' : '<div class="ident-msg" id="simCiMsg"></div>') +
-              '<button class="link-res" id="simVerRes">Ver resultados del simulacro</button>' +
-            '</div>' +
-          '</div>' +
-        '</div>' +
-      pantallaCerrar();
-
-    var input = document.getElementById('simCi');
-    var btn = document.getElementById('simCiBtn');
-    input.addEventListener('input', function () { input.value = input.value.replace(/\D/g, ''); });
-    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') btn.click(); });
-    btn.onclick = function () { verificarCedula(input.value); };
-    document.getElementById('simVerRes').onclick = function () { window.location.href = RESULTADOS_URL; };
-    setTimeout(function () { input.focus(); }, 60);
-  }
-
-  function verificarCedula(ciRaw) {
-    var ci = String(ciRaw || '').replace(/\D/g, '');
-    var msgEl = document.getElementById('simCiMsg');
-    var setMsg = function (t) { if (msgEl) { msgEl.textContent = t; msgEl.classList.add('show'); } };
-    if (ci.length < 5) { setMsg('Ingresá un número de cédula válido.'); return; }
-
-    var btn = document.getElementById('simCiBtn');
-    btn.disabled = true; btn.textContent = 'Verificando…';
-
-    fetch(API + '/estado?ci=' + encodeURIComponent(ci))
-      .then(function (r) { return r.json().then(function (j) { return { status: r.status, j: j }; }); })
-      .then(function (res) {
-        btn.disabled = false; btn.textContent = 'Continuar';
-        if (res.status !== 200) { setMsg(res.j.error || 'No se pudo verificar la cédula.'); return; }
-        var d = res.j;
-        if (d.yaVoto) {
-          votante = { ci: ci, nombre: d.nombre, enPadron: d.enPadron, votadoEn: d.votadoEn };
-          STEP = 'ya_voto'; render(); return;
-        }
-        if (EXIGIR_PADRON && !d.enPadron) {
-          setMsg('Esta cédula no figura en el padrón de Bella Vista. Sólo pueden participar los electores del distrito.');
-          return;
-        }
-        votante = { ci: ci, nombre: d.nombre, enPadron: d.enPadron, mesa: d.mesa, local: d.local };
-        STEP = 'g_cedula';
-        render();
-        root.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      })
-      .catch(function () {
-        btn.disabled = false; btn.textContent = 'Continuar';
-        setMsg('No se pudo conectar con el servidor. Revisá tu conexión e intentá de nuevo.');
-      });
   }
 
   function renderYaVoto() {
@@ -280,11 +225,10 @@
               '<div class="ident-ico ok">' +
                 '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>' +
               '</div>' +
-              '<h2>Ya emitiste tu voto en el simulacro</h2>' +
+              '<h2>Ya se emitió un voto en el simulacro desde este dispositivo</h2>' +
               '<p class="ident-sub">' +
-                (votante && votante.nombre ? '<b>' + esc(votante.nombre) + '</b><br>' : '') +
                 (votante && votante.votadoEn ? 'Registrado el ' + esc(fmtFecha(votante.votadoEn)) + '<br>' : '') +
-                'Cada persona puede votar una sola vez. ¡Gracias por participar!' +
+                'Cada dispositivo puede votar una sola vez. ¡Gracias por participar!' +
               '</p>' +
               '<div class="guia-botones">' +
                 '<button class="next verde" id="simYaRes">Ver resultados</button>' +
@@ -313,8 +257,6 @@
     if (enviando) return;
     enviando = true;
     var payload = {
-      ci: votante ? votante.ci : null,
-      nombre: votante ? votante.nombre : null,
       device_id: deviceId,
       intendente: selPayload(sel['INT']),
       junta: selPayload(sel['JUN']),
@@ -329,7 +271,6 @@
         enviando = false;
         if (res.status === 200 && res.j.ok) {
           votoEnviado = true;
-          try { localStorage.setItem('sim_voto_ci', payload.ci || ''); } catch (e) {}
           cb(null);
         } else {
           var e = new Error(res.j.error || 'No se pudo registrar el voto.');
