@@ -13,9 +13,10 @@ const fs = require('fs');
 const path = require('path');
 const { Pool } = require('pg');
 
+const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 const db = new Pool({
-  connectionString: process.env.DATABASE_URL || process.env.POSTGRES_URL,
-  ssl: { rejectUnauthorized: false },
+  connectionString,
+  ssl: /sslmode=require/.test(connectionString || '') ? { rejectUnauthorized: false } : false,
 });
 
 (async () => {
