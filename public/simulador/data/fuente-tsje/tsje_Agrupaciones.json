@@ -1,0 +1,186 @@
+[
+  {
+    "asistida": "1 - PARTIDO COLORADO",
+    "clase": "Lista",
+    "cod_alianza": null,
+    "cod_partido": null,
+    "codigo": "578",
+    "color": [
+      "#ff0000"
+    ],
+    "color_tipografia": [
+      "#ffffff"
+    ],
+    "id_candidatura": "578",
+    "imagenes": [
+      "default_lista"
+    ],
+    "nombre": "PARTIDO COLORADO",
+    "nombre_corto": "ANR",
+    "numero": "1",
+    "orden_absoluto": [
+      578
+    ]
+  },
+  {
+    "asistida": "2 - ALIANZA BELLA VISTA EN MARCHA",
+    "clase": "Lista",
+    "cod_alianza": null,
+    "cod_partido": null,
+    "codigo": "579",
+    "color": [
+      "#9adbf7"
+    ],
+    "color_tipografia": [
+      "#000000"
+    ],
+    "id_candidatura": "579",
+    "imagenes": [
+      "default_lista"
+    ],
+    "nombre": "ALIANZA BELLA VISTA EN MARCHA",
+    "nombre_corto": "BVEM",
+    "numero": "2",
+    "orden_absoluto": [
+      579
+    ]
+  },
+  {
+    "asistida": "6 - PARTIDO PATRIOTAS INDEPENDIENTES",
+    "clase": "Lista",
+    "cod_alianza": null,
+    "cod_partido": null,
+    "codigo": "580",
+    "color": [
+      "#98add4"
+    ],
+    "color_tipografia": [
+      "#000000"
+    ],
+    "id_candidatura": "580",
+    "imagenes": [
+      "default_lista"
+    ],
+    "nombre": "PARTIDO PATRIOTAS INDEPENDIENTES",
+    "nombre_corto": "PPI",
+    "numero": "6",
+    "orden_absoluto": [
+      580
+    ]
+  },
+  {
+    "asistida": "123 - PARTIDO YO CREO CONCIENCIA DEMOCRATICA NACIONAL",
+    "clase": "Lista",
+    "cod_alianza": null,
+    "cod_partido": null,
+    "codigo": "581",
+    "color": [
+      "#ffa760"
+    ],
+    "color_tipografia": [
+      "#000000"
+    ],
+    "id_candidatura": "581",
+    "imagenes": [
+      "default_lista"
+    ],
+    "nombre": "PARTIDO YO CREO CONCIENCIA DEMOCRATICA NACIONAL",
+    "nombre_corto": "YOCREOCDN",
+    "numero": "123",
+    "orden_absoluto": [
+      581
+    ]
+  },
+  {
+    "asistida": "1 - PARTIDO COLORADO",
+    "clase": "Lista",
+    "cod_alianza": null,
+    "cod_partido": null,
+    "codigo": "582",
+    "color": [
+      "#ff0000"
+    ],
+    "color_tipografia": [
+      "#ffffff"
+    ],
+    "id_candidatura": "582",
+    "imagenes": [
+      "default_lista"
+    ],
+    "nombre": "PARTIDO COLORADO",
+    "nombre_corto": "ANR",
+    "numero": "1",
+    "orden_absoluto": [
+      582
+    ]
+  },
+  {
+    "asistida": "2 - ALIANZA BELLA VISTA EN MARCHA",
+    "clase": "Lista",
+    "cod_alianza": null,
+    "cod_partido": null,
+    "codigo": "583",
+    "color": [
+      "#9adbf7"
+    ],
+    "color_tipografia": [
+      "#000000"
+    ],
+    "id_candidatura": "583",
+    "imagenes": [
+      "default_lista"
+    ],
+    "nombre": "ALIANZA BELLA VISTA EN MARCHA",
+    "nombre_corto": "BVEM",
+    "numero": "2",
+    "orden_absoluto": [
+      583
+    ]
+  },
+  {
+    "asistida": "6 - PARTIDO PATRIOTAS INDEPENDIENTES",
+    "clase": "Lista",
+    "cod_alianza": null,
+    "cod_partido": null,
+    "codigo": "584",
+    "color": [
+      "#98add4"
+    ],
+    "color_tipografia": [
+      "#000000"
+    ],
+    "id_candidatura": "584",
+    "imagenes": [
+      "default_lista"
+    ],
+    "nombre": "PARTIDO PATRIOTAS INDEPENDIENTES",
+    "nombre_corto": "PPI",
+    "numero": "6",
+    "orden_absoluto": [
+      584
+    ]
+  },
+  {
+    "asistida": "123 - PARTIDO YO CREO CONCIENCIA DEMOCRATICA NACIONAL",
+    "clase": "Lista",
+    "cod_alianza": null,
+    "cod_partido": null,
+    "codigo": "585",
+    "color": [
+      "#ffa760"
+    ],
+    "color_tipografia": [
+      "#000000"
+    ],
+    "id_candidatura": "585",
+    "imagenes": [
+      "default_lista"
+    ],
+    "nombre": "PARTIDO YO CREO CONCIENCIA DEMOCRATICA NACIONAL",
+    "nombre_corto": "YOCREOCDN",
+    "numero": "123",
+    "orden_absoluto": [
+      585
+    ]
+  }
+]

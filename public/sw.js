@@ -1,12 +1,18 @@
-const CACHE_NAME = 'padron-v10';
+const CACHE_NAME = 'padron-v12';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/app.html',
+  '/simulador.html',
+  '/simulador/resultados.html',
   '/css/style.css',
+  '/css/simulador.css',
   '/js/api.js',
   '/js/db.js',
   '/js/app.js',
+  '/js/simulador.js',
+  '/js/simulador-resultados.js',
+  '/simulador/data/boleta-bella-vista.json',
   '/manifest.json',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
@@ -46,6 +52,20 @@ self.addEventListener('fetch', (e) => {
       fetch(request)
         .then((res) => res)
         .catch(() => caches.match(request))
+    );
+  } else if (request.url.includes('/simulador/')) {
+    // Simulador assets (data + candidate images): cache-first, populate on first fetch
+    e.respondWith(
+      caches.match(request).then((cached) => {
+        if (cached) return cached;
+        return fetch(request).then((res) => {
+          if (res && res.ok) {
+            const copy = res.clone();
+            caches.open(CACHE_NAME).then((c) => c.put(request, copy));
+          }
+          return res;
+        });
+      })
     );
   } else {
     e.respondWith(

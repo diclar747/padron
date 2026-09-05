@@ -1,0 +1,112 @@
+{
+  "eleccion": "ELECCIONES MUNICIPALES",
+  "anio": "2026 - 2031",
+  "departamento": "7 - ITAPÚA",
+  "distrito": "3 - BELLA VISTA",
+  "zona": "0 - BELLA VISTA",
+  "mesa": "9",
+  "mostrarVotoBlanco": true,
+  "fuente": "Datos oficiales TSJE — simuladoroficial.tsje.gov.py (ubicación 59.7.3). Uso educativo, no oficial.",
+  "imgBase": "img/candidatos/",
+  "categorias": [
+    {
+      "codigo": "INT",
+      "nombre": "INTENDENTE MUNICIPAL",
+      "preferente": false,
+      "maxSelecciones": 1,
+      "listas": [
+        {
+          "numero": "1",
+          "nombre": "PARTIDO COLORADO",
+          "sigla": "ANR",
+          "color": "#ff0000",
+          "colorTexto": "#ffffff",
+          "candidatos": [
+            {
+              "orden": 1,
+              "nombre": "EUCLIDES DE GODOIS",
+              "img": "578.3696.webp"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "codigo": "JUN",
+      "nombre": "JUNTA MUNICIPAL",
+      "preferente": true,
+      "maxSelecciones": 1,
+      "listas": [
+        {
+          "numero": "1",
+          "nombre": "PARTIDO COLORADO",
+          "sigla": "ANR",
+          "color": "#ff0000",
+          "colorTexto": "#ffffff",
+          "candidatos": [
+            {
+              "orden": 1,
+              "nombre": "NELSON ARMOA",
+              "img": "582.3700.webp"
+            },
+            {
+              "orden": 2,
+              "nombre": "LUCIO GONZÁLEZ",
+              "img": "582.3701.webp"
+            },
+            {
+              "orden": 3,
+              "nombre": "MARÍA ROSITA ARANDA",
+              "img": "582.3702.webp"
+            },
+            {
+              "orden": 4,
+              "nombre": "GLADYS AMARILLA",
+              "img": "582.3703.webp"
+            },
+            {
+              "orden": 5,
+              "nombre": "CESNEN GRAU",
+              "img": "582.3704.webp"
+            },
+            {
+              "orden": 6,
+              "nombre": "JAVIER SILVERO",
+              "img": "582.3705.webp"
+            },
+            {
+              "orden": 7,
+              "nombre": "HÉCTOR CABRAL",
+              "img": "582.3706.webp"
+            },
+            {
+              "orden": 8,
+              "nombre": "ALDO ESCOBAR",
+              "img": "582.3707.webp"
+            },
+            {
+              "orden": 9,
+              "nombre": "LUISITO MATIAUDA",
+              "img": "582.3708.webp"
+            },
+            {
+              "orden": 10,
+              "nombre": "JULIO DÁVALOS",
+              "img": "582.3709.webp"
+            },
+            {
+              "orden": 11,
+              "nombre": "JOSÉ BENÍTEZ",
+              "img": "582.3710.webp"
+            },
+            {
+              "orden": 12,
+              "nombre": "CELIA ESCOBAR",
+              "img": "582.3711.webp"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

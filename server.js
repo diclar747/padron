@@ -74,6 +74,7 @@ app.use('/api/reportes', require('./routes/reportes'));
 app.use('/api/logistica', require('./routes/logistica'));
 app.use('/api/incidencias', require('./routes/incidencias'));
 app.use('/api/usuarios', require('./routes/usuarios'));
+app.use('/api/simulador', require('./routes/simulador'));
 
 // Health check
 app.get('/api/health', async (req, res) => {

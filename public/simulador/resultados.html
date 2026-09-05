@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resultados del Simulacro — Bella Vista 2026</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/simulador.css">
+  <meta name="theme-color" content="#0f172a">
+</head>
+<body>
+
+  <header class="sim-topbar">
+    <div class="brand">
+      <img src="/logo.png" alt="ANR">
+      <div>
+        Resultados del Simulacro
+        <small>A.N.R. · Bella Vista 2026</small>
+      </div>
+    </div>
+    <a class="back" href="/simulador.html">&larr; Volver al simulador</a>
+  </header>
+
+  <div class="res-wrap">
+    <div class="sim-lede">
+      <h1>Simulacro de Votación — Bella Vista</h1>
+      <p>Conteo de votos del simulador. Datos <b>no oficiales</b>, sólo con fines de práctica y análisis interno de campaña.</p>
+    </div>
+
+    <div id="resRoot" class="res-root">
+      <div class="res-loading"><div class="spinner"></div><p>Cargando resultados…</p></div>
+    </div>
+
+    <div class="res-foot">
+      <button id="resRefresh" class="res-btn">Actualizar</button>
+      <span id="resActualizado"></span>
+    </div>
+  </div>
+
+  <script src="/js/simulador-resultados.js"></script>
+</body>
+</html>

@@ -1,0 +1,48 @@
+[
+  {
+    "INT": 425,
+    "codigo": "578",
+    "lista_completa": true
+  },
+  {
+    "INT": 426,
+    "codigo": "579",
+    "lista_completa": true
+  },
+  {
+    "INT": 428,
+    "codigo": "580",
+    "lista_completa": true
+  },
+  {
+    "INT": 429,
+    "codigo": "581",
+    "lista_completa": true
+  },
+  {
+    "JUN": 7616,
+    "codigo": "582",
+    "lista_completa": true
+  },
+  {
+    "JUN": 7628,
+    "codigo": "583",
+    "lista_completa": true
+  },
+  {
+    "JUN": 7640,
+    "codigo": "584",
+    "lista_completa": true
+  },
+  {
+    "JUN": 7652,
+    "codigo": "585",
+    "lista_completa": true
+  },
+  {
+    "INT": 848,
+    "JUN": 10811,
+    "codigo": "BLC",
+    "lista_completa": true
+  }
+]
