@@ -4,3 +4,7 @@ public/uploads/*
 !public/uploads/.gitkeep
 .DS_Store
 *.log
+
+# Padrones fuente (datos personales de electores, no van al repo)
+*.CSV
+*.csv
